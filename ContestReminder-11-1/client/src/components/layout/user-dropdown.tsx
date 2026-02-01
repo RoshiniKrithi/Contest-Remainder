@@ -83,11 +83,11 @@ export function UserDropdown({ className }: UserDropdownProps) {
 
           <DropdownMenuItem
             className="cursor-pointer"
-            data-testid="menu-your-profile"
+            data-testid="menu-heat-map"
             onClick={() => setShowProfile(true)}
           >
             <LineChart className="mr-2 h-4 w-4" />
-            <span>Your Profile</span>
+            <span>Heat Map</span>
           </DropdownMenuItem>
 
           {user?.role === "admin" && (

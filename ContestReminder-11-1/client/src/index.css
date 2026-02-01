@@ -83,7 +83,7 @@
     @apply border-border;
     transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
-  
+
   html {
     scroll-behavior: smooth;
   }
@@ -204,9 +204,12 @@
 
 /* Live contest pulse animation */
 @keyframes pulse-red {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -221,6 +224,7 @@
   0% {
     opacity: 0.8;
   }
+
   100% {
     opacity: 1;
   }
@@ -261,7 +265,9 @@
 }
 
 /* Smooth focus animations */
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   transform: scale(1.01);
   transition: all 0.2s ease;
 }
@@ -272,9 +278,11 @@ input:focus, textarea:focus, select:focus {
     transform: rotate(0deg);
     filter: brightness(1);
   }
+
   50% {
     filter: brightness(1.2);
   }
+
   100% {
     transform: rotate(360deg);
     filter: brightness(1);
@@ -283,4 +291,98 @@ input:focus, textarea:focus, select:focus {
 
 .dark .animate-spin {
   animation: spin-glow 1s linear infinite;
+}
+
+/* refined glassmorphism effects */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.dark .glass-card {
+  background: rgba(2, 6, 23, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Gradient Typography */
+.text-gradient-neon {
+  background: linear-gradient(135deg, #e2e8f0 0%, #64748b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-primary {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Accent Underline */
+.neon-underline {
+  position: relative;
+}
+
+.neon-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.neon-underline-active::after {
+  transform: scaleX(1);
+}
+
+/* Icon Glow */
+.icon-glow {
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
+
+/* Mesh Gradient Background */
+.mesh-bg {
+  background-color: #020617;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(263, 67%, 51%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(180, 67%, 51%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(263, 67%, 51%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(180, 67%, 51%, 0.1) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+@keyframes mesh-float {
+
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+.mesh-blob {
+  position: absolute;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.4;
+  animation: mesh-float 20s infinite ease-in-out;
 }
