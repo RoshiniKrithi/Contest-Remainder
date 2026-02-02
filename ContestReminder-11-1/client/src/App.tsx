@@ -4,9 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
 import { ProtectedAdminRoute } from "@/lib/protected-admin-route";
+import { AnimatePresence } from "framer-motion";
 import Navbar from "@/components/layout/navbar";
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminUserList from "@/pages/admin/user-list";
@@ -22,50 +23,79 @@ import PlatformDetail from "@/pages/platform-detail";
 import Leaderboard from "@/pages/leaderboard";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
+import LoadingScreen from "@/components/layout/loading-screen";
+import { useState, useEffect, useRef } from "react";
 
 function Router() {
+  const [location] = useLocation();
+
   return (
-    <Switch>
-      <Route path="/auth" component={AuthPage} />
+    <AnimatePresence mode="wait" initial={false}>
+      <Switch location={location} key={location}>
+        <Route path="/auth" component={AuthPage} />
 
-      {/* Admin Routes */}
-      <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
-      <ProtectedAdminRoute path="/admin/users" component={AdminUserList} />
-      <ProtectedAdminRoute path="/admin/users/:id" component={AdminUserDetail} />
+        {/* Admin Routes */}
+        <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
+        <ProtectedAdminRoute path="/admin/users" component={AdminUserList} />
+        <ProtectedAdminRoute path="/admin/users/:id" component={AdminUserDetail} />
 
-      {/* User Routes */}
-      <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/reminders" component={Contests} />
-      <ProtectedRoute path="/contests" component={Contests} />
-      <ProtectedRoute path="/courses" component={Courses} />
-      <ProtectedRoute path="/contest/:id" component={ContestDetail} />
-      <ProtectedRoute path="/course/:id" component={CourseDetail} />
-      <ProtectedRoute path="/problems" component={Problems} />
-      <ProtectedAdminRoute path="/profile" component={Profile} />
-      <ProtectedRoute path="/leaderboard" component={Leaderboard} />
-      <ProtectedRoute path="/platform/:platform" component={PlatformDetail} />
-      <Route component={NotFound} />
-    </Switch>
+        {/* User Routes */}
+        <ProtectedRoute path="/" component={Dashboard} />
+        <ProtectedRoute path="/reminders" component={Contests} />
+        <ProtectedRoute path="/contests" component={Contests} />
+        <ProtectedRoute path="/courses" component={Courses} />
+        <ProtectedRoute path="/contest/:id" component={ContestDetail} />
+        <ProtectedRoute path="/course/:id" component={CourseDetail} />
+        <ProtectedRoute path="/problems" component={Problems} />
+        <ProtectedAdminRoute path="/profile" component={Profile} />
+        <ProtectedRoute path="/leaderboard" component={Leaderboard} />
+        <ProtectedRoute path="/platform/:platform" component={PlatformDetail} />
+        <Route component={NotFound} />
+      </Switch>
+    </AnimatePresence>
+  );
+}
+
+function AppContent() {
+  const [location] = useLocation();
+  const isAdminRoute = location.startsWith("/admin");
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const prevUserRef = useRef(user);
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    // Show loader ONLY when user transitions from null to non-null (login)
+    // or if the user is already logged in and it's the first render (if that's desired)
+    // The user said: "after i login when i gooes to the dash board page not befor that"
+
+    if (user && !prevUserRef.current && !hasLoadedRef.current) {
+      setIsLoading(true);
+      hasLoadedRef.current = true;
+    }
+    prevUserRef.current = user;
+  }, [user]);
+
+  return (
+    <TooltipProvider>
+      {isLoading && <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />}
+      <div className={`min-h-screen transition-all duration-300 ${isAdminRoute ? '' : 'bg-gradient-to-br from-gray-900 to-gray-800'}`}>
+        {!isAdminRoute && <Navbar />}
+        <main className="relative">
+          <Router />
+        </main>
+      </div>
+      <Toaster />
+    </TooltipProvider>
   );
 }
 
 function App() {
-  const [location] = useLocation();
-  const isAdminRoute = location.startsWith("/admin");
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <div className={`min-h-screen transition-all duration-300 ${isAdminRoute ? '' : 'bg-gradient-to-br from-gray-900 to-gray-800'}`}>
-              {!isAdminRoute && <Navbar />}
-              <main className="relative">
-                <Router />
-              </main>
-            </div>
-            <Toaster />
-          </TooltipProvider>
+          <AppContent />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
