@@ -23,8 +23,10 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { EnrollmentStatus } from "@/components/courses/enrollment-status";
+import ParticlesBackground from "@/components/layout/particles-background";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Course, Lesson, Enrollment } from "@shared/schema";
+import PageTransition from "@/components/layout/page-transition";
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -113,238 +115,242 @@ export default function CourseDetail() {
   };
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="show"
-      variants={containerVariants}
-      className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
-    >
-      <motion.div variants={itemVariants} className="mb-8">
-        <Link href="/courses">
-          <Button variant="ghost" className="text-slate-500 hover:text-white hover:bg-white/5 rounded-xl px-4 font-black uppercase text-[10px] tracking-widest">
-            <ArrowLeft className="w-3 h-3 mr-2" />
-            Tactical Modules
-          </Button>
-        </Link>
-      </motion.div>
+    <PageTransition>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={containerVariants}
+        className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 relative"
+      >
+        {/* Particle Background */}
+        <ParticlesBackground />
+        <motion.div variants={itemVariants} className="mb-8">
+          <Link href="/courses">
+            <Button variant="ghost" className="text-slate-500 hover:text-white hover:bg-white/5 rounded-xl px-4 font-black uppercase text-[10px] tracking-widest">
+              <ArrowLeft className="w-3 h-3 mr-2" />
+              Tactical Modules
+            </Button>
+          </Link>
+        </motion.div>
 
-      {/* Hero Briefing Section */}
-      <motion.div variants={itemVariants} className="relative mb-12 rounded-[2.5rem] overflow-hidden border border-white/5 bg-slate-900 shadow-2xl">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/20 via-slate-950 to-purple-600/20 pointer-events-none" />
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full" />
+        {/* Hero Briefing Section */}
+        <motion.div variants={itemVariants} className="relative mb-12 rounded-[2.5rem] overflow-hidden border border-white/5 bg-slate-900 shadow-2xl">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/20 via-slate-950 to-purple-600/20 pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/10 blur-[120px] rounded-full" />
 
-        <div className="relative z-10 p-10 lg:p-16">
-          <div className="flex flex-col lg:flex-row justify-between gap-10">
-            <div className="flex-1 space-y-6">
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${getLevelColor(course.level)}`}>
-                  {course.level} Operative
-                </Badge>
-                <div className="h-1 w-1 rounded-full bg-slate-700" />
-                <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                  <Clock className="h-3 w-3" />
-                  {course.duration} Window
+          <div className="relative z-10 p-10 lg:p-16">
+            <div className="flex flex-col lg:flex-row justify-between gap-10">
+              <div className="flex-1 space-y-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border ${getLevelColor(course.level)}`}>
+                    {course.level} Operative
+                  </Badge>
+                  <div className="h-1 w-1 rounded-full bg-slate-700" />
+                  <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <Clock className="h-3 w-3" />
+                    {course.duration} Window
+                  </div>
+                </div>
+
+                <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter max-w-3xl leading-[1.1]">
+                  {course.title}
+                </h1>
+
+                <p className="text-lg text-slate-400 font-medium max-w-2xl leading-relaxed">
+                  {course.description}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-8 pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-blue-400">
+                      <GraduationCap className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Lead Instructor</span>
+                      <span className="text-sm font-bold text-white leading-none">{course.instructor}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-500">
+                      <Star className="h-5 w-5 fill-amber-500/20" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Rating</span>
+                      <span className="text-sm font-bold text-white leading-none">{(course.rating || 5).toFixed(1)} / 5.0</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400">
+                      <Users className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Enrolled</span>
+                      <span className="text-sm font-bold text-white leading-none">{(course.students || 0).toLocaleString()} Agents</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tighter max-w-3xl leading-[1.1]">
-                {course.title}
-              </h1>
+              <div className="lg:w-80 flex flex-col justify-center">
+                <Card className="bg-white/[0.03] backdrop-blur-xl border-white/10 rounded-3xl p-8 shadow-2xl">
+                  <div className="text-center mb-6">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Clearance Requirement</span>
+                    <div className="text-4xl font-black text-white mb-1">
+                      {course.price === "Free" ? "OPEN" : course.price}
+                    </div>
+                    {course.price === "Free" && <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Level 1 Accessible</span>}
+                  </div>
 
-              <p className="text-lg text-slate-400 font-medium max-w-2xl leading-relaxed">
-                {course.description}
-              </p>
-
-              <div className="flex flex-wrap items-center gap-8 pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-blue-400">
-                    <GraduationCap className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Lead Instructor</span>
-                    <span className="text-sm font-bold text-white leading-none">{course.instructor}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-amber-500">
-                    <Star className="h-5 w-5 fill-amber-500/20" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Rating</span>
-                    <span className="text-sm font-bold text-white leading-none">{(course.rating || 5).toFixed(1)} / 5.0</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Enrolled</span>
-                    <span className="text-sm font-bold text-white leading-none">{(course.students || 0).toLocaleString()} Agents</span>
-                  </div>
-                </div>
+                  <EnrollmentStatus
+                    enrollment={enrollment}
+                    courseId={course.id}
+                    onEnroll={(courseId) => enrollMutation.mutate(courseId)}
+                    onContinue={(courseId) => {/* Navigate */ }}
+                    loading={enrollMutation.isPending}
+                  />
+                </Card>
               </div>
-            </div>
-
-            <div className="lg:w-80 flex flex-col justify-center">
-              <Card className="bg-white/[0.03] backdrop-blur-xl border-white/10 rounded-3xl p-8 shadow-2xl">
-                <div className="text-center mb-6">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Clearance Requirement</span>
-                  <div className="text-4xl font-black text-white mb-1">
-                    {course.price === "Free" ? "OPEN" : course.price}
-                  </div>
-                  {course.price === "Free" && <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Level 1 Accessible</span>}
-                </div>
-
-                <EnrollmentStatus
-                  enrollment={enrollment}
-                  courseId={course.id}
-                  onEnroll={(courseId) => enrollMutation.mutate(courseId)}
-                  onContinue={(courseId) => {/* Navigate */ }}
-                  loading={enrollMutation.isPending}
-                />
-              </Card>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <div className="lg:col-span-8 space-y-12">
-          {/* Intel Breakdown */}
-          <motion.div variants={itemVariants} className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-white/5" />
-              <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-2">
-                <Target className="h-4 w-4 text-blue-500" />
-                Tactical Objectives
-              </h2>
-              <div className="h-px flex-1 bg-white/5" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Array.isArray(course.topics) && course.topics.map((topic: string, index: number) => (
-                <Card key={index} className="bg-slate-900/40 border-white/5 p-5 rounded-2xl flex items-center gap-4 group hover:bg-slate-900/60 transition-colors">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-xs">
-                    {index + 1}
-                  </div>
-                  <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{topic}</span>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Curriculum Timeline */}
-          <motion.div variants={itemVariants} className="space-y-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                <BookOpen className="h-6 w-6 text-purple-500" />
-                Course Curriculum
-              </h2>
-              <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-white/10 text-slate-500">
-                {lessons.length} Modules Detected
-              </Badge>
-            </div>
-
-            <div className="space-y-4">
-              {lessonsLoading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="h-20 bg-white/5 animate-pulse rounded-2xl" />
-                ))
-              ) : lessons.length > 0 ? (
-                lessons.map((lesson, index) => (
-                  <MotionCard
-                    key={lesson.id}
-                    variants={itemVariants}
-                    whileHover={{ x: 6 }}
-                    className="group bg-slate-900/40 border-white/5 hover:border-blue-500/20 hover:bg-slate-900/60 rounded-2xl overflow-hidden p-5 transition-all relative"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-5 flex-1">
-                        <div className="w-12 h-12 rounded-xl bg-slate-950 border border-white/5 flex flex-col items-center justify-center text-blue-400 group-hover:border-blue-500/40 transition-colors">
-                          <span className="text-[10px] font-black uppercase tracking-tighter text-slate-600 mb-0.5">MOD</span>
-                          <span className="text-base font-black leading-none">{lesson.order}</span>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors leading-tight">
-                            {lesson.title}
-                          </h3>
-                          <div className="flex items-center gap-4 mt-1.5">
-                            {lesson.duration && (
-                              <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                <Clock className="h-3.3 w-3.5" />
-                                {lesson.duration}m duration
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-emerald-500/60 transition-colors">
-                              <Play className="h-3 w-3 fill-current" />
-                              Protocol Active
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <Button size="icon" className="bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl group/btn">
-                        <ChevronRight className="h-4 w-4 text-slate-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
-                      </Button>
-                    </div>
-                  </MotionCard>
-                ))
-              ) : (
-                <Card className="bg-slate-900/40 border-white/5 p-16 text-center rounded-3xl">
-                  <Shield className="h-12 w-12 text-slate-800 mx-auto mb-4" />
-                  <p className="text-slate-500 font-medium">Full tactical briefing modules are currently being encrypted. Check back in 24h.</p>
-                </Card>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="lg:col-span-4 space-y-8">
-          <MotionCard variants={itemVariants} className="bg-slate-900/40 border-white/5 rounded-3xl p-8 overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] -mr-16 -mt-16 rounded-full" />
-            <div className="relative z-10 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-8 space-y-12">
+            {/* Intel Breakdown */}
+            <motion.div variants={itemVariants} className="space-y-6">
               <div className="flex items-center gap-3">
-                <Info className="h-5 w-5 text-blue-500" />
-                <h4 className="text-sm font-black text-white uppercase tracking-widest">Intel Specs</h4>
+                <div className="h-px flex-1 bg-white/5" />
+                <h2 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-2">
+                  <Target className="h-4 w-4 text-blue-500" />
+                  Tactical Objectives
+                </h2>
+                <div className="h-px flex-1 bg-white/5" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.isArray(course.topics) && course.topics.map((topic: string, index: number) => (
+                  <Card key={index} className="bg-slate-900/40 border-white/5 p-5 rounded-2xl flex items-center gap-4 group hover:bg-slate-900/60 transition-colors">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-black text-xs">
+                      {index + 1}
+                    </div>
+                    <span className="text-sm font-bold text-slate-300 group-hover:text-white transition-colors">{topic}</span>
+                  </Card>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Curriculum Timeline */}
+            <motion.div variants={itemVariants} className="space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                  <BookOpen className="h-6 w-6 text-purple-500" />
+                  Course Curriculum
+                </h2>
+                <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-white/10 text-slate-500">
+                  {lessons.length} Modules Detected
+                </Badge>
               </div>
 
               <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-white/5">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Operative Level</span>
-                  <Badge variant="outline" className={`rounded-lg border-white/5 ${getLevelColor(course.level)} text-[10px] font-black uppercase`}>
-                    {course.level}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-white/5">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Complexity</span>
-                  <span className="text-xs font-bold text-slate-300">{course.difficulty}</span>
-                </div>
-                {course.prerequisites && (
-                  <div className="pt-2">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Pre-requisites Required</span>
-                    <p className="text-xs font-semibold text-slate-400 bg-white/[0.02] p-4 rounded-xl border border-white/5">
-                      {course.prerequisites}
-                    </p>
-                  </div>
+                {lessonsLoading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <div key={i} className="h-20 bg-white/5 animate-pulse rounded-2xl" />
+                  ))
+                ) : lessons.length > 0 ? (
+                  lessons.map((lesson, index) => (
+                    <MotionCard
+                      key={lesson.id}
+                      variants={itemVariants}
+                      whileHover={{ x: 6 }}
+                      className="group bg-slate-900/40 border-white/5 hover:border-blue-500/20 hover:bg-slate-900/60 rounded-2xl overflow-hidden p-5 transition-all relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-5 flex-1">
+                          <div className="w-12 h-12 rounded-xl bg-slate-950 border border-white/5 flex flex-col items-center justify-center text-blue-400 group-hover:border-blue-500/40 transition-colors">
+                            <span className="text-[10px] font-black uppercase tracking-tighter text-slate-600 mb-0.5">MOD</span>
+                            <span className="text-base font-black leading-none">{lesson.order}</span>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors leading-tight">
+                              {lesson.title}
+                            </h3>
+                            <div className="flex items-center gap-4 mt-1.5">
+                              {lesson.duration && (
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                  <Clock className="h-3.3 w-3.5" />
+                                  {lesson.duration}m duration
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1.5 text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-emerald-500/60 transition-colors">
+                                <Play className="h-3 w-3 fill-current" />
+                                Protocol Active
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button size="icon" className="bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl group/btn">
+                          <ChevronRight className="h-4 w-4 text-slate-400 group-hover/btn:text-white group-hover/btn:translate-x-0.5 transition-all" />
+                        </Button>
+                      </div>
+                    </MotionCard>
+                  ))
+                ) : (
+                  <Card className="bg-slate-900/40 border-white/5 p-16 text-center rounded-3xl">
+                    <Shield className="h-12 w-12 text-slate-800 mx-auto mb-4" />
+                    <p className="text-slate-500 font-medium">Full tactical briefing modules are currently being encrypted. Check back in 24h.</p>
+                  </Card>
                 )}
               </div>
-            </div>
-          </MotionCard>
+            </motion.div>
+          </div>
 
-          <MotionCard variants={itemVariants} className="bg-emerald-500/5 border-emerald-500/10 rounded-3xl p-8 overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[50px] -mr-16 -mt-16 rounded-full group-hover:bg-emerald-500/20 transition-colors" />
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <Award className="h-5 w-5 text-emerald-500" />
-                <h4 className="text-sm font-black text-emerald-400 uppercase tracking-widest">Protocol Completion</h4>
+          <div className="lg:col-span-4 space-y-8">
+            <MotionCard variants={itemVariants} className="bg-slate-900/40 border-white/5 rounded-3xl p-8 overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[50px] -mr-16 -mt-16 rounded-full" />
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center gap-3">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  <h4 className="text-sm font-black text-white uppercase tracking-widest">Intel Specs</h4>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-3 border-b border-white/5">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Operative Level</span>
+                    <Badge variant="outline" className={`rounded-lg border-white/5 ${getLevelColor(course.level)} text-[10px] font-black uppercase`}>
+                      {course.level}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-3 border-b border-white/5">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Complexity</span>
+                    <span className="text-xs font-bold text-slate-300">{course.difficulty}</span>
+                  </div>
+                  {course.prerequisites && (
+                    <div className="pt-2">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-3">Pre-requisites Required</span>
+                      <p className="text-xs font-semibold text-slate-400 bg-white/[0.02] p-4 rounded-xl border border-white/5">
+                        {course.prerequisites}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <p className="text-xs font-bold text-slate-400 leading-relaxed">
-                Finish all modules in this module to earn a <strong>Command Certificate</strong> and unlock <strong>Sector 7</strong> access.
-              </p>
-            </div>
-          </MotionCard>
+            </MotionCard>
+
+            <MotionCard variants={itemVariants} className="bg-emerald-500/5 border-emerald-500/10 rounded-3xl p-8 overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[50px] -mr-16 -mt-16 rounded-full group-hover:bg-emerald-500/20 transition-colors" />
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <Award className="h-5 w-5 text-emerald-500" />
+                  <h4 className="text-sm font-black text-emerald-400 uppercase tracking-widest">Protocol Completion</h4>
+                </div>
+                <p className="text-xs font-bold text-slate-400 leading-relaxed">
+                  Finish all modules in this module to earn a <strong>Command Certificate</strong> and unlock <strong>Sector 7</strong> access.
+                </p>
+              </div>
+            </MotionCard>
+          </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </PageTransition>
   );
 }
