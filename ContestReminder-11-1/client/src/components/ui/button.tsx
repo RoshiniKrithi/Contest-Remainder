@@ -39,18 +39,36 @@ export interface ButtonProps
   asChild?: boolean
 }
 
+import { motion } from "framer-motion"
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    
+    // We wrap the component in motion if it's not asChild
+    // If asChild is true, we can't easily wrap it without potentially breaking the child
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        />
+      )
+    }
+
     return (
-      <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref}
+      <motion.button
+        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.02 }}
+        className={cn(buttonVariants({ variant, size, className }), "active:scale-95 transition-transform duration-100")}
+        ref={ref as any}
         {...props}
       />
     )
   }
 )
 Button.displayName = "Button"
+
 
 export { Button, buttonVariants }
