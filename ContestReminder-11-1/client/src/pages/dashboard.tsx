@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Code, Bell, ExternalLink, Clock, Calendar } from "lucide-react";
+import { Card, CardContent, MotionCard } from "@/components/ui/card";
+import { Trophy, Users, Code, Bell, ExternalLink, Clock, Calendar, Zap, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/table";
 import ContestTimer from "@/components/contests/contest-timer";
 import ProgressGraph from "@/components/progress/progress-graph";
+import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -22,9 +24,23 @@ export default function Dashboard() {
     queryKey: ["/api/external-contests"],
   });
 
-
   const liveContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "live") : [];
   const upcomingContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "upcoming").slice(0, 5) : [];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  };
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -47,9 +63,9 @@ export default function Dashboard() {
     const now = new Date().getTime();
     const end = new Date(endTime).getTime();
     const remaining = end - now;
-    
+
     if (remaining <= 0) return "Ended";
-    
+
     const hours = Math.floor(remaining / (1000 * 60 * 60));
     const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
     return `${hours}h ${minutes}m left`;
@@ -60,241 +76,265 @@ export default function Dashboard() {
       title: "Contests Attended",
       value: 47,
       icon: Trophy,
-      color: "bg-green-100 dark:bg-green-900",
-      iconColor: "text-secondary",
+      color: "bg-blue-500/10",
+      iconColor: "text-blue-400",
+      border: "border-blue-500/20"
     },
     {
-      title: "Total Participants",
-      value: 1847,
-      icon: Users,
-      color: "bg-blue-100 dark:bg-blue-900",
-      iconColor: "text-primary",
+      title: "Active Contests",
+      value: liveContests.length,
+      icon: Activity,
+      color: "bg-emerald-500/10",
+      iconColor: "text-emerald-400",
+      border: "border-emerald-500/20"
     },
     {
       title: "Problems Solved",
       value: 342,
       icon: Code,
-      color: "bg-orange-100 dark:bg-orange-900",
-      iconColor: "text-accent",
+      color: "bg-violet-500/10",
+      iconColor: "text-violet-400",
+      border: "border-violet-500/20"
     },
     {
-      title: "Upcoming Contests",
+      title: "Upcoming Reminders",
       value: upcomingContests.length,
       icon: Bell,
-      color: "bg-red-100 dark:bg-red-900",
-      iconColor: "text-destructive",
+      color: "bg-rose-500/10",
+      iconColor: "text-rose-400",
+      border: "border-rose-500/20"
     },
   ];
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+    >
+      {/* Header Section */}
+      <motion.div variants={itemVariants} className="mb-10">
+        <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+          Coding <span className="text-gradient-primary">Arena</span>
+        </h1>
+        <p className="text-slate-400 font-medium">Welcome back, Commander. Here's your status report.</p>
+      </motion.div>
+
       {/* Dashboard Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <motion.div
+        variants={containerVariants}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+      >
         {statsCards.map((stat, index) => (
-          <Card key={index} className="card-hover theme-transition">
+          <MotionCard
+            key={index}
+            variants={itemVariants}
+            className="card-hover border-white/5 bg-slate-900/40"
+          >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                  <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
                     {stat.title}
                   </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {statsLoading ? "..." : stat.value.toLocaleString()}
+                  <p className="text-3xl font-black text-white">
+                    {statsLoading ? <Skeleton className="h-8 w-20" /> : stat.value.toLocaleString()}
                   </p>
                 </div>
-                <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
-                  <stat.icon className={`${stat.iconColor} text-xl h-6 w-6`} />
+                <div className={`w-12 h-12 ${stat.color} ${stat.border} border rounded-2xl flex items-center justify-center shadow-lg`}>
+                  <stat.icon className={`${stat.iconColor} h-6 w-6`} />
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </MotionCard>
         ))}
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-8">
+        <motion.div variants={itemVariants} className="lg:col-span-2 space-y-8">
           {/* Live Contests Section */}
-          <Card>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Live Contests
+          <Card className="border-white/5 bg-slate-900/40">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg">
+                  <Activity className="h-5 w-5 text-emerald-400" />
+                </div>
+                <h2 className="text-xl font-black text-white tracking-tight">
+                  Battleground: Live
                 </h2>
-                <span className="bg-green-100 dark:bg-green-900 text-secondary px-3 py-1 rounded-full text-sm font-medium">
-                  <span className="inline-block w-2 h-2 bg-secondary rounded-full mr-1"></span>
-                  {liveContests.length} Active
-                </span>
               </div>
+              <span className="flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/20">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                {liveContests.length} ACTIVE NOW
+              </span>
             </div>
             <CardContent className="p-0">
               {contestsLoading ? (
                 <div className="p-6 space-y-4">
                   {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                    </div>
+                    <Skeleton key={i} className="h-20 w-full rounded-xl" />
                   ))}
                 </div>
               ) : liveContests.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                  No live contests at the moment
-                </p>
+                <div className="py-20 flex flex-col items-center justify-center text-slate-500 italic">
+                  <Zap className="h-10 w-10 mb-4 opacity-20" />
+                  <p>All battlegrounds are currently dormant.</p>
+                </div>
               ) : (
-                <Table>
-                  <TableHeader className="bg-gray-100 dark:bg-gray-800">
-                    <TableRow>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Contest Name</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Platform</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Duration</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Time Remaining</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {liveContests.map((contest: any) => (
-                      <TableRow key={contest.id} data-testid={`row-live-contest-${contest.id}`}>
-                        <TableCell className="font-medium" data-testid={`text-contest-name-${contest.id}`}>
-                          {contest.name || contest.title}
-                        </TableCell>
-                        <TableCell data-testid={`text-platform-${contest.id}`}>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                            {contest.platform}
-                          </span>
-                        </TableCell>
-                        <TableCell data-testid={`text-duration-${contest.id}`}>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            {contest.duration ? formatDuration(contest.duration) : "N/A"}
-                          </div>
-                        </TableCell>
-                        <TableCell data-testid={`text-time-remaining-${contest.id}`}>
-                          <span className="text-green-600 dark:text-green-400 font-medium">
-                            {contest.end_time ? getTimeRemaining(contest.end_time) : "N/A"}
-                          </span>
-                        </TableCell>
-                        <TableCell data-testid={`action-live-contest-${contest.id}`}>
-                          {contest.url ? (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => window.open(contest.url, '_blank')}
-                              data-testid={`button-join-contest-${contest.id}`}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              Join
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled>
-                              View
-                            </Button>
-                          )}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-white/5">
+                      <TableRow className="border-white/5 hover:bg-transparent">
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Challenge</TableHead>
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">System</TableHead>
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Window</TableHead>
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">ETA</TableHead>
+                        <TableHead className="text-right text-slate-400 font-bold uppercase tracking-wider text-[10px]">Uplink</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      <AnimatePresence>
+                        {liveContests.map((contest: any) => (
+                          <motion.tr
+                            key={contest.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="group border-white/5 hover:bg-white/[0.02] transition-colors"
+                          >
+                            <TableCell className="font-bold text-slate-200">
+                              {contest.name || contest.title}
+                            </TableCell>
+                            <TableCell>
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
+                                {contest.platform}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-slate-400 text-sm">
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" />
+                                {contest.duration ? formatDuration(contest.duration) : "--"}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-emerald-400 font-bold text-sm">
+                                {contest.end_time ? getTimeRemaining(contest.end_time) : "LIVE"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-white/10 hover:bg-white hover:text-slate-950 transition-all font-bold"
+                                onClick={() => window.open(contest.url, '_blank')}
+                              >
+                                JOIN <ExternalLink className="h-3 w-3 ml-1.5" />
+                              </Button>
+                            </TableCell>
+                          </motion.tr>
+                        ))}
+                      </AnimatePresence>
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Upcoming Contests Section */}
-          <Card>
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Upcoming Contests
-              </h2>
+          <Card className="border-white/5 bg-slate-900/40">
+            <div className="p-6 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-500/10 rounded-lg">
+                  <Calendar className="h-5 w-5 text-indigo-400" />
+                </div>
+                <h2 className="text-xl font-black text-white tracking-tight">
+                  Briefing: Upcoming
+                </h2>
+              </div>
             </div>
             <CardContent className="p-0">
               {contestsLoading ? (
                 <div className="p-6 space-y-4">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="animate-pulse border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                    </div>
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
                   ))}
                 </div>
               ) : upcomingContests.length === 0 ? (
-                <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-                  No upcoming contests scheduled
-                </p>
+                <p className="text-slate-500 text-center py-10 italic">No future missions detected.</p>
               ) : (
-                <Table>
-                  <TableHeader className="bg-gray-100 dark:bg-gray-800">
-                    <TableRow>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Contest Name</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Platform</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Start Time</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Duration</TableHead>
-                      <TableHead className="text-gray-900 dark:text-white font-semibold">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {upcomingContests.map((contest: any) => (
-                      <TableRow key={contest.id} data-testid={`row-upcoming-contest-${contest.id}`}>
-                        <TableCell className="font-medium" data-testid={`text-contest-name-${contest.id}`}>
-                          {contest.name || contest.title}
-                        </TableCell>
-                        <TableCell data-testid={`text-platform-${contest.id}`}>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
-                            {contest.platform}
-                          </span>
-                        </TableCell>
-                        <TableCell data-testid={`text-start-time-${contest.id}`}>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            {contest.start_time ? formatDateTime(contest.start_time) : "TBD"}
-                          </div>
-                        </TableCell>
-                        <TableCell data-testid={`text-duration-${contest.id}`}>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4 text-gray-500" />
-                            {contest.duration ? formatDuration(contest.duration) : "N/A"}
-                          </div>
-                        </TableCell>
-                        <TableCell data-testid={`action-upcoming-contest-${contest.id}`}>
-                          {contest.url ? (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => window.open(contest.url, '_blank')}
-                              data-testid={`button-view-contest-${contest.id}`}
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled>
-                              View
-                            </Button>
-                          )}
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-white/5">
+                      <TableRow className="border-white/5 hover:bg-transparent">
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Mission</TableHead>
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Sector</TableHead>
+                        <TableHead className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Launch</TableHead>
+                        <TableHead className="text-right text-slate-400 font-bold uppercase tracking-wider text-[10px]">Intel</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {upcomingContests.map((contest: any) => (
+                        <TableRow key={contest.id} className="border-white/5 hover:bg-white/[0.02] group transition-colors">
+                          <TableCell className="font-bold text-slate-200">
+                            {contest.name || contest.title}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
+                              {contest.platform}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-slate-400 text-sm font-medium">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5" />
+                              {contest.start_time ? formatDateTime(contest.start_time) : "TBD"}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 text-slate-400 hover:text-white transition-colors font-bold"
+                              onClick={() => window.open(contest.url, '_blank')}
+                            >
+                              VIEW <ExternalLink className="h-3 w-3 ml-1.5 opacity-50" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
-
-
-        </div>
+        </motion.div>
 
         {/* Sidebar */}
-        <div className="space-y-8">
+        <motion.div variants={itemVariants} className="space-y-8">
           {/* Progress Graph */}
-          <ProgressGraph />
+          <ProgressGraph className="border-white/5 bg-slate-900/40" />
 
           {/* Contest Timer */}
-          {liveContests.length > 0 && (
-            <ContestTimer contest={liveContests[0]} />
-          )}
-        </div>
+          <AnimatePresence>
+            {liveContests.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+              >
+                <ContestTimer contest={liveContests[0]} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
+
