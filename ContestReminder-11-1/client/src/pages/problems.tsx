@@ -1,16 +1,16 @@
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, MotionCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Code, Clock, Trophy } from "lucide-react";
+import { Search, Code, Clock, Trophy, Filter, Target, CheckCircle2, Zap, BarChart3, Binary } from "lucide-react";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Problems() {
   const [searchQuery, setSearchQuery] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
 
-  // Mock problems data - in real app, this would come from API
   const problems = [
     {
       id: "1",
@@ -23,7 +23,7 @@ export default function Problems() {
       description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
     },
     {
-      id: "2", 
+      id: "2",
       title: "Binary Search",
       difficulty: "medium",
       points: 200,
@@ -35,7 +35,7 @@ export default function Problems() {
     {
       id: "3",
       title: "Maximum Subarray",
-      difficulty: "medium", 
+      difficulty: "medium",
       points: 250,
       solved: true,
       timeLimit: 2000,
@@ -62,168 +62,169 @@ export default function Problems() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "easy": return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300";
-      case "medium": return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300";
-      case "hard": return "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300";
-      default: return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300";
+      case "easy": return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "medium": return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+      case "hard": return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+      default: return "text-slate-400 bg-slate-500/10 border-slate-500/20";
     }
   };
 
-  const stats = {
-    total: problems.length,
-    solved: problems.filter(p => p.solved).length,
-    easy: problems.filter(p => p.difficulty === "easy").length,
-    medium: problems.filter(p => p.difficulty === "medium").length,
-    hard: problems.filter(p => p.difficulty === "hard").length,
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
   };
 
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  };
+
+  const stats = [
+    { label: "Total Intercepted", count: problems.length, icon: Binary, color: "text-blue-400" },
+    { label: "Completed", count: problems.filter(p => p.solved).length, icon: CheckCircle2, color: "text-emerald-400" },
+    { label: "Easy", count: problems.filter(p => p.difficulty === "easy").length, icon: Zap, color: "text-emerald-400" },
+    { label: "Medium", count: problems.filter(p => p.difficulty === "medium").length, icon: BarChart3, color: "text-amber-400" },
+    { label: "Hard", count: problems.filter(p => p.difficulty === "hard").length, icon: Target, color: "text-rose-400" },
+  ];
+
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Problems
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
+    >
+      <motion.div variants={itemVariants} className="mb-12">
+        <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+          Tactical <span className="text-gradient-primary">Archives</span>
         </h1>
-        <p className="text-gray-700 dark:text-gray-300">
-          Practice your coding skills with our collection of programming problems
+        <p className="text-slate-400 font-medium">
+          Access high-intensity algorithmic simulations to calibrate your performance.
         </p>
-      </div>
+      </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {stats.total}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Total</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-secondary">
-              {stats.solved}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Solved</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {stats.easy}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Easy</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {stats.medium}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Medium</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {stats.hard}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Hard</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+        {stats.map((stat, i) => (
+          <MotionCard key={i} variants={itemVariants} className="border-white/5 bg-slate-900/40 backdrop-blur-md">
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              <stat.icon className={`h-5 w-5 ${stat.color} mb-2`} />
+              <div className="text-2xl font-black text-white leading-none mb-1">
+                {stat.count}
+              </div>
+              <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{stat.label}</div>
+            </CardContent>
+          </MotionCard>
+        ))}
       </div>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <motion.div variants={itemVariants} className="mb-10">
+        <Card className="border-white/5 bg-slate-950/60 backdrop-blur-xl rounded-2xl overflow-hidden">
+          <CardContent className="p-5 flex flex-col md:flex-row gap-5">
+            <div className="flex-1 relative group">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500 transition-colors group-focus-within:text-blue-400" />
               <Input
-                placeholder="Search problems..."
+                placeholder="Scan for specific objectives..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 bg-white/5 border-white/5 focus:border-blue-500/50 h-12 rounded-xl text-white font-medium shadow-inner"
               />
             </div>
             <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Difficulty" />
+              <SelectTrigger className="w-full md:w-[200px] bg-white/5 border-white/5 h-12 rounded-xl text-slate-300 font-bold uppercase text-[10px] tracking-widest transition-all hover:bg-white/10">
+                <Filter className="h-3 w-3 mr-2 text-slate-500" />
+                <SelectValue placeholder="Intensity" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Difficulties</SelectItem>
-                <SelectItem value="easy">Easy</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="hard">Hard</SelectItem>
+              <SelectContent className="bg-slate-900 border-white/10">
+                <SelectItem value="all" className="uppercase text-[10px] font-bold tracking-widest py-3 hover:bg-white/5 text-slate-300">Full Spectrum</SelectItem>
+                <SelectItem value="easy" className="uppercase text-[10px] font-bold tracking-widest py-3 hover:bg-white/5 text-emerald-400">Low Intensity</SelectItem>
+                <SelectItem value="medium" className="uppercase text-[10px] font-bold tracking-widest py-3 hover:bg-white/5 text-amber-400">Medium Intensity</SelectItem>
+                <SelectItem value="hard" className="uppercase text-[10px] font-bold tracking-widest py-3 hover:bg-white/5 text-rose-400">High Intensity</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Problems List */}
-      <div className="space-y-4">
-        {filteredProblems.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                No Problems Found
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Try adjusting your search or filter criteria.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredProblems.map((problem) => (
-            <Card key={problem.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {problem.title}
-                      </h3>
-                      {problem.solved && (
-                        <Badge variant="outline" className="text-secondary border-secondary">
-                          ✓ Solved
+      <motion.div variants={containerVariants} className="space-y-4">
+        <AnimatePresence mode="popLayout">
+          {filteredProblems.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <Card className="border-white/5 bg-slate-900/40 p-20 text-center">
+                <Search className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-xl font-black text-white mb-2">No Records Found</h3>
+                <p className="text-slate-500">Your scan yielded no results. Adjust your parameters.</p>
+              </Card>
+            </motion.div>
+          ) : (
+            filteredProblems.map((problem) => (
+              <MotionCard
+                key={problem.id}
+                variants={itemVariants}
+                whileHover={{ x: 5 }}
+                className="group border-white/5 bg-slate-900/40 backdrop-blur-md hover:bg-slate-900/60 transition-all cursor-pointer overflow-hidden relative"
+              >
+                <div className={`absolute left-0 top-0 h-full w-1 ${problem.solved ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : 'bg-transparent'}`} />
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors">
+                          {problem.title}
+                        </h3>
+                        {problem.solved && (
+                          <div className="p-1 bg-emerald-500/10 rounded-full">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-slate-400 max-w-3xl leading-relaxed">
+                        {problem.description}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col md:items-end gap-4 min-w-[200px]">
+                      <div className="flex items-center gap-4">
+                        <Badge className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${getDifficultyColor(problem.difficulty)}`}>
+                          {problem.difficulty}
                         </Badge>
-                      )}
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
-                      {problem.description}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end space-y-2">
-                    <Badge className={getDifficultyColor(problem.difficulty)}>
-                      {problem.difficulty.charAt(0).toUpperCase() + problem.difficulty.slice(1)}
-                    </Badge>
-                    <div className="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
-                      <Trophy className="h-4 w-4" />
-                      <span>{problem.points} pts</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{problem.timeLimit}ms</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Code className="h-4 w-4" />
-                      <span>{problem.memoryLimit}MB</span>
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                          <Trophy className="h-3.5 w-3.5 text-blue-500" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{problem.points} PX</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between w-full md:w-auto md:gap-8">
+                        <div className="flex items-center gap-4 text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            <span className="text-[9px] font-bold">{problem.timeLimit}ms</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Code className="h-3 w-3" />
+                            <span className="text-[9px] font-bold">{problem.memoryLimit}MB</span>
+                          </div>
+                        </div>
+                        <Button size="sm" className={`h-9 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${problem.solved ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20'}`}>
+                          {problem.solved ? "Re-Run" : "Execute"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                  <Button>
-                    {problem.solved ? "Solve Again" : "Solve Problem"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+                </CardContent>
+              </MotionCard>
+            ))
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 }
+
