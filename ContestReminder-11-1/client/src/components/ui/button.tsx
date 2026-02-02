@@ -35,16 +35,17 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
 import { motion } from "framer-motion"
+import MagneticElement from "./magnetic-element"
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
-    
+
     // We wrap the component in motion if it's not asChild
     // If asChild is true, we can't easily wrap it without potentially breaking the child
     if (asChild) {
@@ -58,13 +59,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <motion.button
-        whileTap={{ scale: 0.98 }}
-        whileHover={{ scale: 1.02 }}
-        className={cn(buttonVariants({ variant, size, className }), "active:scale-95 transition-transform duration-100")}
-        ref={ref as any}
-        {...props}
-      />
+      <MagneticElement strength={0.25}>
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.02 }}
+          className={cn(buttonVariants({ variant, size, className }), "active:scale-95 transition-transform duration-100")}
+          ref={ref as any}
+          {...props}
+        />
+      </MagneticElement>
     )
   }
 )

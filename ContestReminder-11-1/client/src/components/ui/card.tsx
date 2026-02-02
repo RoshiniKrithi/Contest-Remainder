@@ -3,6 +3,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 import { motion } from "framer-motion"
+import MagneticElement from "./magnetic-element"
 
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -11,7 +12,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow-sm glass-card overflow-hidden",
+      "rounded-xl border bg-card text-card-foreground shadow-sm glass-card overflow-hidden glow-card-hover",
       className
     )}
     {...props}
@@ -21,7 +22,24 @@ Card.displayName = "Card"
 
 const MotionCard = motion(Card);
 
-export { MotionCard }
+// Magnetic Card with motion
+const MagneticCard = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <MagneticElement strength={0.15}>
+    <MotionCard
+      ref={ref}
+      className={className}
+      {...props}
+    >
+      {children}
+    </MotionCard>
+  </MagneticElement>
+));
+MagneticCard.displayName = "MagneticCard";
+
+export { MotionCard, MagneticCard }
 
 
 const CardHeader = React.forwardRef<
