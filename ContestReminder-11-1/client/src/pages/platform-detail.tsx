@@ -1,27 +1,30 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import PageTransition from "@/components/layout/page-transition";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ExternalLink, 
-  Clock, 
-  Calendar, 
-  Users, 
-  Check, 
+import {
+  ExternalLink,
+  Clock,
+  Calendar,
+  Users,
+  Check,
   Plus,
   Trophy,
   ArrowLeft,
   Timer
 } from "lucide-react";
-import { 
-  SiCodeforces, 
-  SiLeetcode, 
-  SiCodechef 
+import {
+  SiCodeforces,
+  SiLeetcode,
+  SiCodechef
 } from "react-icons/si";
 import { Link } from "wouter";
+import ParticlesBackground from "@/components/layout/particles-background";
 import { useToast } from "@/hooks/use-toast";
 
 interface Contest {
@@ -98,7 +101,7 @@ export default function PlatformDetail() {
   const platform = params?.platform || '';
   const { toast } = useToast();
   const [attendedContests, setAttendedContests] = useState<Set<string>>(new Set());
-  
+
   const { data: contests, isLoading } = useQuery({
     queryKey: ['/api/external-contests'],
     refetchInterval: 300000, // 5 minutes
@@ -125,7 +128,7 @@ export default function PlatformDetail() {
 
   const getPlatformContests = () => {
     if (!contests || !Array.isArray(contests)) return [];
-    
+
     const platformKeywords: Record<string, string[]> = {
       'codeforces': ['codeforces'],
       'leetcode': ['leetcode'],
@@ -136,9 +139,9 @@ export default function PlatformDetail() {
     };
 
     const keywords = platformKeywords[platform] || [platform];
-    
-    return contests.filter((contest: Contest) => 
-      keywords.some((keyword: string) => 
+
+    return contests.filter((contest: Contest) =>
+      keywords.some((keyword: string) =>
         (contest.site && contest.site.toLowerCase().includes(keyword.toLowerCase())) ||
         (contest.url && contest.url.toLowerCase().includes(keyword.toLowerCase())) ||
         (contest.name && contest.name.toLowerCase().includes(keyword.toLowerCase()))
@@ -174,13 +177,13 @@ export default function PlatformDetail() {
     const now = new Date();
     const start = new Date(startTime);
     const diffMs = start.getTime() - now.getTime();
-    
+
     if (diffMs <= 0) return "Started";
-    
+
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (diffDays > 0) return `${diffDays}d ${diffHours}h`;
     if (diffHours > 0) return `${diffHours}h ${diffMinutes}m`;
     return `${diffMinutes}m`;
@@ -219,7 +222,7 @@ export default function PlatformDetail() {
     const endTime = formatDateTime(contest.end_time);
     const isLive = contest.status === 'live';
     const isUpcoming = contest.status === 'upcoming';
-    
+
     return (
       <Card className={`${info?.bgColor} ${info?.borderColor} border-l-4 transition-all duration-300 hover:shadow-lg hover:scale-105 group`} data-testid={`contest-card-${contest.id}`}>
         <CardHeader className="pb-3">
@@ -276,7 +279,7 @@ export default function PlatformDetail() {
               </div>
             </div>
           </div>
-          
+
           {/* Contest Status and Progress */}
           {isLive ? (
             <div className="space-y-2">
@@ -287,8 +290,8 @@ export default function PlatformDetail() {
                 </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div 
-                  className="bg-red-500 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-red-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getContestProgress(contest.start_time, contest.end_time)}%` }}
                 />
               </div>
@@ -312,7 +315,7 @@ export default function PlatformDetail() {
               </div>
             </div>
           ) : null}
-          
+
           {/* Contest Details */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
@@ -322,9 +325,9 @@ export default function PlatformDetail() {
               </span>
             </div>
           </div>
-          
+
           <div className="flex space-x-2">
-            <Button 
+            <Button
               className={`flex-1 ${info?.color || 'bg-gray-600'} text-white font-semibold py-3 hover:shadow-lg transition-all duration-200 hover:scale-105`}
               onClick={() => window.open(contest.url, '_blank')}
               data-testid={`button-join-${contest.id}`}
@@ -339,163 +342,167 @@ export default function PlatformDetail() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <Link href="/reminders">
-            <Button variant="outline" size="sm" className="btn-animate" data-testid="button-back">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div className="flex items-center space-x-3">
-            <div className={`p-3 rounded-lg ${info.color} text-white`}>
-              <IconComponent className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{info.name}</h1>
-              <p className="text-gray-600 dark:text-gray-400">{info.description}</p>
+    <PageTransition>
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+        {/* Particle Background */}
+        <ParticlesBackground />
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Link href="/reminders">
+              <Button variant="outline" size="sm" className="btn-animate" data-testid="button-back">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <div className="flex items-center space-x-3">
+              <div className={`p-3 rounded-lg ${info.color} text-white`}>
+                <IconComponent className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{info.name}</h1>
+                <p className="text-gray-600 dark:text-gray-400">{info.description}</p>
+              </div>
             </div>
           </div>
+          <Button
+            onClick={() => window.open(info.website, '_blank')}
+            className="btn-animate"
+            data-testid="button-visit-platform"
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Visit {info.name}
+          </Button>
         </div>
-        <Button 
-          onClick={() => window.open(info.website, '_blank')}
-          className="btn-animate"
-          data-testid="button-visit-platform"
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Visit {info.name}
-        </Button>
-      </div>
 
-      {/* Contest Tabs */}
-      <Tabs defaultValue="live" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="live" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
-            Live Contests ({liveContests.length})
-          </TabsTrigger>
-          <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">
-            Upcoming ({upcomingContests.length})
-          </TabsTrigger>
-          <TabsTrigger value="past" className="data-[state=active]:bg-accent data-[state=active]:text-white">
-            Recent Past ({pastContests.length})
-          </TabsTrigger>
-        </TabsList>
+        {/* Contest Tabs */}
+        <Tabs defaultValue="live" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="live" className="data-[state=active]:bg-secondary data-[state=active]:text-white">
+              Live Contests ({liveContests.length})
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-primary data-[state=active]:text-white">
+              Upcoming ({upcomingContests.length})
+            </TabsTrigger>
+            <TabsTrigger value="past" className="data-[state=active]:bg-accent data-[state=active]:text-white">
+              Recent Past ({pastContests.length})
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="live" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Live Contests</h2>
-            {liveContests.length > 0 && (
-              <Badge variant="default" className="bg-secondary">
-                <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-                {liveContests.length} Active
-              </Badge>
+          <TabsContent value="live" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Live Contests</h2>
+              {liveContests.length > 0 && (
+                <Badge variant="default" className="bg-secondary">
+                  <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                  {liveContests.length} Active
+                </Badge>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : liveContests.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Live Contests</h3>
+                <p className="text-gray-600 dark:text-gray-400">There are no live contests on {info.name} at the moment.</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {liveContests.map((contest) => (
+                  <ContestCard key={contest.id} contest={contest} showAttendance={true} />
+                ))}
+              </div>
             )}
-          </div>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : liveContests.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Live Contests</h3>
-              <p className="text-gray-600 dark:text-gray-400">There are no live contests on {info.name} at the moment.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {liveContests.map((contest) => (
-                <ContestCard key={contest.id} contest={contest} showAttendance={true} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          </TabsContent>
 
-        <TabsContent value="upcoming" className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Upcoming Contests</h2>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : upcomingContests.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Upcoming Contests</h3>
-              <p className="text-gray-600 dark:text-gray-400">No upcoming contests are scheduled on {info.name}.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {upcomingContests.map((contest) => (
-                <ContestCard key={contest.id} contest={contest} showAttendance={true} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          <TabsContent value="upcoming" className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Upcoming Contests</h2>
 
-        <TabsContent value="past" className="space-y-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">All Past Contests</h2>
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : pastContests.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Past Contests</h3>
-              <p className="text-gray-600 dark:text-gray-400">No past contests found for {info.name}.</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {pastContests.map((contest) => (
-                <ContestCard key={contest.id} contest={contest} showAttendance={true} />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : upcomingContests.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Upcoming Contests</h3>
+                <p className="text-gray-600 dark:text-gray-400">No upcoming contests are scheduled on {info.name}.</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {upcomingContests.map((contest) => (
+                  <ContestCard key={contest.id} contest={contest} showAttendance={true} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="past" className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">All Past Contests</h2>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-full mt-2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : pastContests.length === 0 ? (
+              <Card className="p-8 text-center">
+                <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Past Contests</h3>
+                <p className="text-gray-600 dark:text-gray-400">No past contests found for {info.name}.</p>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {pastContests.map((contest) => (
+                  <ContestCard key={contest.id} contest={contest} showAttendance={true} />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </PageTransition>
   );
 }
