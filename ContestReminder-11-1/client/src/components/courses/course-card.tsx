@@ -1,43 +1,27 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TiltCard } from "@/components/ui/tilt-card";
-import { Users, Clock, Star, BookOpen, GraduationCap, DollarSign } from "lucide-react";
+import { MotionCard } from "@/components/ui/card";
+import { Users, Clock, Star, BookOpen, GraduationCap, DollarSign, ArrowRight, Play, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { EnrollmentStatus } from "./enrollment-status";
-import type { Enrollment } from "@shared/schema";
+import type { Enrollment, Course } from "@shared/schema";
+import { motion } from "framer-motion";
 
 interface CourseCardProps {
-  course: {
-    id: string;
-    title: string;
-    description: string;
-    level: string;
-    duration: string;
-    difficulty: string;
-    topics: string[];
-    prerequisites?: string | null;
-    instructor: string;
-    rating: number;
-    students: number;
-    price: string;
-    thumbnail?: string | null;
-  };
+  course: Course;
 }
 
 export default function CourseCard({ course }: CourseCardProps) {
   const queryClient = useQueryClient();
-  // For demo purposes, using a mock user ID until authentication is implemented
   const userId = "demo-user-123";
 
-  // Fetch enrollment status for this course
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
     queryKey: ["/api/users", userId, "courses", course.id, "enrollment"],
     retry: false,
   });
 
-  // Enrollment mutation
   const enrollMutation = useMutation({
     mutationFn: async (courseId: string) => {
       return await apiRequest("POST", `/api/courses/${courseId}/enroll`, { userId });
@@ -47,147 +31,99 @@ export default function CourseCard({ course }: CourseCardProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
     },
   });
+
   const getLevelColor = (level: string) => {
     switch (level.toLowerCase()) {
-      case "beginner":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "intermediate":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-      case "advanced":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+      case "beginner": return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "intermediate": return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+      case "advanced": return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+      default: return "text-slate-400 bg-slate-500/10 border-slate-500/20";
     }
   };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case "easy":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-      case "medium":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-      case "hard":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[...Array(5)].map((_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${i < rating
-                ? "text-yellow-400 fill-current"
-                : "text-gray-300 dark:text-gray-600"
-              }`}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  // Determine glow color based on level
-  const glowColor = course.level.toLowerCase() === "beginner"
-    ? "rgba(34, 197, 94, 0.4)" // green for beginner
-    : course.level.toLowerCase() === "intermediate"
-      ? "rgba(234, 179, 8, 0.4)" // yellow for intermediate
-      : "rgba(239, 68, 68, 0.4)"; // red for advanced
 
   return (
-    <TiltCard glowColor={glowColor} maxTilt={8}>
-      <div className="bg-black border border-gray-600 rounded-lg p-4 hover:border-primary transition-all duration-300 hover:shadow-xl">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="font-semibold text-white mb-1">
-              {course.title}
-            </h3>
-            <p className="text-sm text-gray-300 line-clamp-2 mb-2">
-              {course.description}
-            </p>
-          </div>
-          <div className="flex flex-col items-end space-y-1 ml-3">
-            <Badge className={getLevelColor(course.level)}>
-              {course.level}
-            </Badge>
-            <Badge className={getDifficultyColor(course.difficulty)}>
-              {course.difficulty}
-            </Badge>
+    <MotionCard
+      whileHover={{ y: -5, scale: 1.02 }}
+      className="group flex flex-col h-full bg-slate-900/40 border-white/5 backdrop-blur-md rounded-2xl overflow-hidden shadow-2xl relative"
+    >
+      {/* Visual Accent */}
+      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      <div className="p-6 flex flex-col h-full z-10">
+        <div className="flex justify-between items-start mb-4">
+          <Badge className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${getLevelColor(course.level)}`}>
+            {course.level}
+          </Badge>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
+            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+            <span className="text-[10px] font-black text-white">{course.rating}.0</span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-gray-300 mb-3">
-          <span className="flex items-center">
-            <Users className="h-4 w-4 mr-1" />
-            {course.students.toLocaleString()} students
-          </span>
-          <span className="flex items-center">
-            <Clock className="h-4 w-4 mr-1" />
-            {course.duration}
-          </span>
+        <div className="flex-grow mb-6">
+          <h3 className="text-lg font-black text-white leading-tight mb-2 group-hover:text-blue-400 transition-colors">
+            {course.title}
+          </h3>
+          <p className="text-xs font-medium text-slate-400 line-clamp-2 leading-relaxed">
+            {course.description}
+          </p>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-gray-300 mb-3">
-          <div className="flex items-center">
-            <GraduationCap className="h-4 w-4 mr-1" />
-            <span>{course.instructor}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            {renderStars(course.rating)}
-            <span className="ml-1">({course.rating}.0)</span>
-          </div>
-        </div>
-
-        {course.topics && course.topics.length > 0 && (
-          <div className="mb-3">
-            <div className="flex items-center mb-1">
-              <BookOpen className="h-4 w-4 mr-1 text-gray-300" />
-              <span className="text-sm text-gray-300">Topics:</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <Users className="h-3.5 w-3.5 text-slate-600" />
+              {(course.students ?? 0).toLocaleString()} Cadets
             </div>
-            <div className="flex flex-wrap gap-1">
-              {course.topics.slice(0, 3).map((topic, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {topic}
-                </Badge>
-              ))}
-              {course.topics.length > 3 && (
-                <Badge variant="outline" className="text-xs">
-                  +{course.topics.length - 3} more
-                </Badge>
-              )}
+            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <Clock className="h-3.5 w-3.5 text-slate-600" />
+              {course.duration}
             </div>
           </div>
-        )}
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <DollarSign className="h-4 w-4 mr-1 text-gray-300" />
-              <span className={`font-semibold ${course.price === "Free"
-                  ? "text-green-400"
-                  : "text-white"
-                }`}>
-                {course.price}
+          <div className="flex flex-wrap gap-1.5">
+            {(course.topics as string[] || []).slice(0, 3).map((topic: string, i: number) => (
+              <span key={i} className="text-[9px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                {topic}
+              </span>
+            ))}
+            {(course.topics as string[] || []).length > 3 && (
+              <span className="text-[9px] font-bold text-slate-600 px-1 py-0.5">
+                +{(course.topics as string[]).length - 3}
+              </span>
+            )}
+          </div>
+
+          <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pricing</span>
+              <span className={`text-sm font-black ${course.price === "Free" ? 'text-emerald-400' : 'text-white'}`}>
+                {course.price === "Free" ? "FREE ACCESS" : course.price}
               </span>
             </div>
+
             <Link href={`/course/${course.id}`}>
-              <Button variant="outline" size="sm" className="btn-animate">
-                View Details
+              <Button variant="ghost" size="sm" className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-blue-300 hover:bg-blue-400/10">
+                Intelligence
+                <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             </Link>
           </div>
 
-          <EnrollmentStatus
-            enrollment={enrollment}
-            courseId={course.id}
-            onEnroll={(courseId) => enrollMutation.mutate(courseId)}
-            onContinue={(courseId) => window.location.href = `/course/${courseId}`}
-            loading={enrollmentLoading || enrollMutation.isPending}
-          />
+          <div className="pt-1">
+            <EnrollmentStatus
+              enrollment={enrollment}
+              courseId={course.id}
+              onEnroll={(courseId) => enrollMutation.mutate(courseId)}
+              onContinue={(courseId) => window.location.href = `/course/${courseId}`}
+              loading={enrollmentLoading || enrollMutation.isPending}
+            />
+          </div>
         </div>
       </div>
-    </TiltCard>
+
+      {/* Subtle Glow */}
+      <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-blue-500/10 blur-[50px] pointer-events-none" />
+    </MotionCard>
   );
 }
