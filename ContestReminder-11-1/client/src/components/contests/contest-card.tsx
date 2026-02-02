@@ -1,8 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TiltCard } from "@/components/ui/tilt-card";
-import { Users, Clock, Calendar, Hourglass } from "lucide-react";
+import { MotionCard } from "@/components/ui/card";
+import { Users, Clock, Calendar, Hourglass, Globe, ExternalLink, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
+import { motion } from "framer-motion";
 
 interface ContestCardProps {
   contest: {
@@ -25,7 +26,6 @@ export default function ContestCard({ contest }: ContestCardProps) {
   const isLive = contest.status === "live";
   const isUpcoming = contest.status === "upcoming";
 
-  // Handle both internal and external contest data structures
   const contestTitle = contest.title || contest.name || "Untitled Contest";
   const startTime = contest.startTime || contest.start_time;
   const endTime = contest.endTime || contest.end_time;
@@ -34,7 +34,6 @@ export default function ContestCard({ contest }: ContestCardProps) {
     if (!startTime || !endTime) return "";
 
     const now = new Date();
-    const start = new Date(startTime);
     const end = new Date(endTime);
 
     if (isLive) {
@@ -42,10 +41,6 @@ export default function ContestCard({ contest }: ContestCardProps) {
       const hours = Math.floor(timeLeft / (1000 * 60 * 60));
       const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
       return `Ends in ${hours}h ${minutes}m`;
-    } else if (isUpcoming) {
-      const duration = end.getTime() - start.getTime();
-      const hours = Math.floor(duration / (1000 * 60 * 60));
-      return `${hours} hours`;
     }
     return "";
   };
@@ -54,7 +49,6 @@ export default function ContestCard({ contest }: ContestCardProps) {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -68,97 +62,106 @@ export default function ContestCard({ contest }: ContestCardProps) {
       if (mins === 0) return `${hours}h`;
       return `${hours}h ${mins}m`;
     }
-    return getTimeInfo();
+    return "";
   };
 
-  // Determine glow color based on status
-  const glowColor = isLive
-    ? "rgba(34, 197, 94, 0.4)" // green for live
-    : isUpcoming
-      ? "rgba(59, 130, 246, 0.4)" // blue for upcoming
-      : "rgba(107, 114, 128, 0.3)"; // gray for completed
-
   return (
-    <TiltCard glowColor={glowColor} maxTilt={8}>
-      <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary transition-all duration-300 bg-white dark:bg-gray-900 hover:shadow-xl">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex-1 mr-2">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-1" data-testid="text-contest-title">
+    <MotionCard
+      whileHover={{ y: -5, scale: 1.02 }}
+      className="group relative overflow-hidden border-white/5 bg-slate-900/40 backdrop-blur-md rounded-2xl h-full flex flex-col"
+    >
+      {/* Visual Accents */}
+      <div className={`absolute top-0 left-0 w-1 h-full ${isLive ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : isUpcoming ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' : 'bg-slate-700'}`} />
+
+      <div className="p-5 flex flex-col h-full">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-white/5 rounded-lg">
+                <Globe className="h-3.5 w-3.5 text-slate-400" />
+              </span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                {contest.platform || "Platform"}
+              </span>
+            </div>
+            <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">
               {contestTitle}
             </h3>
-            {contest.platform && (
-              <p className="text-xs text-gray-600 dark:text-gray-300" data-testid="text-platform">
-                {contest.platform}
-              </p>
-            )}
           </div>
           <Badge
-            variant={isLive ? "default" : "secondary"}
-            className={isLive ? "bg-green-600 text-white" : isUpcoming ? "bg-blue-600 text-white" : "bg-gray-600 text-white"}
-            data-testid="badge-status"
+            className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border-transparent ${isLive
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                : isUpcoming
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]"
+                  : "bg-slate-800 text-slate-400"
+              }`}
           >
-            {isLive ? "Live" : isUpcoming ? "Upcoming" : "Completed"}
+            {contest.status}
           </Badge>
         </div>
 
-        <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {contest.participants !== undefined ? (
-            <span className="flex items-center" data-testid="text-participants">
-              <Users className="h-4 w-4 mr-1" />
-              {contest.participants} participants
-            </span>
-          ) : (
-            <span className="flex items-center" data-testid="text-duration">
-              <Hourglass className="h-4 w-4 mr-1" />
-              Duration: {getDurationInfo()}
-            </span>
-          )}
-          <span className="flex items-center" data-testid="text-time-info">
+        <div className="space-y-3 mb-6 flex-grow">
+          {/* Metrics */}
+          <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-400">
+            <div className="flex items-center gap-1.5">
+              <Hourglass className="h-3.5 w-3.5 text-slate-500" />
+              {getDurationInfo() || "N/A"}
+            </div>
             {isLive ? (
-              <>
-                <Clock className="h-4 w-4 mr-1" />
+              <div className="flex items-center gap-1.5 text-emerald-400 animate-pulse">
+                <Clock className="h-3.5 w-3.5" />
                 {getTimeInfo()}
-              </>
+              </div>
             ) : (
-              <>
-                <Calendar className="h-4 w-4 mr-1" />
-                {getDurationInfo()}
-              </>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                {startTime ? formatDateTime(startTime) : "TBD"}
+              </div>
             )}
-          </span>
+          </div>
+
+          {contest.participants !== undefined && (
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+              <Users className="h-3.5 w-3.5" />
+              {contest.participants.toLocaleString()} Enrolled
+            </div>
+          )}
         </div>
 
-        {isUpcoming && startTime && (
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center" data-testid="text-start-time">
-            <Calendar className="h-4 w-4 mr-1" />
-            {formatDateTime(startTime)}
-          </div>
-        )}
-
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
           {contest.url ? (
-            <a href={contest.url} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="btn-animate" data-testid="button-open-contest">
-                {isLive ? "Join Contest" : "View Contest"}
+            <a href={contest.url} target="_blank" rel="noopener noreferrer" className="flex-1">
+              <Button
+                variant="default"
+                size="sm"
+                className={`w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl transition-all shadow-lg ${isLive
+                    ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20"
+                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
+                  }`}
+              >
+                {isLive ? "Initiate Uplink" : "View Intelligence"}
+                <ExternalLink className="h-3.5 w-3.5 ml-2" />
               </Button>
             </a>
           ) : (
-            <Link href={`/contest/${contest.id}`}>
-              <Button size="sm" className="btn-animate" data-testid="button-join-contest">
-                {isLive ? "Join Contest" : "Register"}
-              </Button>
-            </Link>
-          )}
-          {!contest.url && (
-            <Link href={`/contest/${contest.id}`}>
-              <Button variant="outline" size="sm" className="btn-animate" data-testid="button-view-details">
-                View {isLive ? "Problems" : "Details"}
+            <Link href={`/contest/${contest.id}`} className="flex-1">
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all"
+              >
+                {isLive ? "Begin Operation" : "Register Units"}
+                <ShieldCheck className="h-3.5 w-3.5 ml-2" />
               </Button>
             </Link>
           )}
         </div>
       </div>
-    </TiltCard>
+
+      {/* Glow Effect */}
+      <div className={`absolute -bottom-10 -right-10 w-24 h-24 blur-[60px] opacity-20 pointer-events-none rounded-full ${isLive ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+    </MotionCard>
   );
 }
+
 
