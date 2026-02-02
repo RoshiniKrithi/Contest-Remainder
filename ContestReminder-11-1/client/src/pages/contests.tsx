@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, MotionCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import ContestCard from "@/components/contests/contest-card";
 import { useState } from "react";
-import { Filter, Globe } from "lucide-react";
+import { Filter, Globe, Activity, Calendar, CheckCircle2, Search, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Interface for external contest data
 interface ExternalContest {
   id: string;
   name: string;
@@ -23,36 +24,44 @@ export default function Contests() {
   const { data: contests = [], isLoading } = useQuery<ExternalContest[]>({
     queryKey: ["/api/external-contests"],
   });
-  
+
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
-  
-  // Get unique platforms
+
   const platforms = Array.from(new Set(contests.map(c => c.platform))).sort();
-  
-  // Filter contests by platform if selected
-  const filteredContests = selectedPlatform 
+
+  const filteredContests = selectedPlatform
     ? contests.filter(c => c.platform === selectedPlatform)
     : contests;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 10 },
+    show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.4 } },
+  };
+
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-6">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+      <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-64 bg-white/5" />
+            <Skeleton className="h-4 w-96 bg-white/5" />
           </div>
-          <div className="grid gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="animate-pulse">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                  </CardContent>
-                </Card>
-              </div>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-10 w-24 bg-white/5 rounded-xl" />)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-48 w-full rounded-2xl bg-white/5" />
             ))}
           </div>
         </div>
@@ -63,8 +72,7 @@ export default function Contests() {
   const liveContests = filteredContests.filter((c) => c.status === "live");
   const upcomingContests = filteredContests.filter((c) => c.status === "upcoming");
   const completedContests = filteredContests.filter((c) => c.status === "completed");
-  
-  // Group contests by platform for display
+
   const contestsByPlatform = contests.reduce((acc, contest) => {
     if (!acc[contest.platform]) {
       acc[contest.platform] = { live: [], upcoming: [], completed: [] };
@@ -74,203 +82,153 @@ export default function Contests() {
   }, {} as Record<string, { live: ExternalContest[], upcoming: ExternalContest[], completed: ExternalContest[] }>);
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={containerVariants}
+      className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+    >
+      <motion.div variants={itemVariants} className="mb-10">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           <div>
-            <h1 className="text-3xl font-bold text-black mb-2" data-testid="text-page-title">
-              Live Contests
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+              Mission <span className="text-gradient-primary">Control</span>
             </h1>
-            <p className="text-black">
-              Upcoming and ongoing contests from major coding platforms
-            </p>
+            <p className="text-slate-400 font-medium">Monitoring all active and upcoming global coding maneuvers.</p>
           </div>
-          
-          {/* Platform Filter */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-gray-500" />
+
+          <div className="flex items-center gap-3 p-1.5 bg-slate-900/60 backdrop-blur-md rounded-2xl border border-white/5 flex-wrap">
             <Button
-              variant={selectedPlatform === null ? "default" : "outline"}
+              variant={selectedPlatform === null ? "default" : "ghost"}
               size="sm"
               onClick={() => setSelectedPlatform(null)}
-              className="text-xs"
-              data-testid="button-filter-all"
+              className={`text-[10px] font-black uppercase tracking-widest h-9 px-4 rounded-xl transition-all ${selectedPlatform === null ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:bg-blue-500' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
             >
-              <Globe className="h-3 w-3 mr-1" />
-              All Platforms
+              <Globe className="h-3.5 w-3.5 mr-2" />
+              All Sectors
             </Button>
             {platforms.map((platform) => (
               <Button
                 key={platform}
-                variant={selectedPlatform === platform ? "default" : "outline"}
+                variant={selectedPlatform === platform ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setSelectedPlatform(platform)}
-                className="text-xs"
-                data-testid={`button-filter-${platform.toLowerCase().replace(/\s+/g, '-')}`}
+                className={`text-[10px] font-black uppercase tracking-widest h-9 px-4 rounded-xl transition-all ${selectedPlatform === platform ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:bg-blue-500' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
               >
                 {platform}
               </Button>
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <Tabs defaultValue="live" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
-          <TabsTrigger value="live" className="relative">
-            Live
-            {liveContests.length > 0 && (
-              <Badge variant="secondary" className="ml-2 text-xs">
-                {liveContests.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="upcoming" className="relative">
-            Upcoming
-            {upcomingContests.length > 0 && (
-              <Badge variant="outline" className="ml-2 text-xs">
-                {upcomingContests.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="live" className="space-y-8">
+        <motion.div variants={itemVariants}>
+          <TabsList className="bg-slate-900/60 backdrop-blur-md border border-white/5 p-1 rounded-2xl h-14">
+            <TabsTrigger value="live" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl h-full px-8 text-xs font-black uppercase tracking-widest transition-all">
+              <Activity className="h-4 w-4 mr-2" />
+              Deployed ({liveContests.length})
+            </TabsTrigger>
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl h-full px-8 text-xs font-black uppercase tracking-widest transition-all">
+              <Calendar className="h-4 w-4 mr-2" />
+              Queued ({upcomingContests.length})
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl h-full px-8 text-xs font-black uppercase tracking-widest transition-all">
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Archived
+            </TabsTrigger>
+          </TabsList>
+        </motion.div>
 
-        <TabsContent value="live" className="space-y-6">
+        <TabsContent value="live" className="outline-none">
           {liveContests.length === 0 ? (
-            <Card data-testid="card-no-live-contests">
-              <CardContent className="p-12 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  No Live Contests
+            <MotionCard variants={itemVariants} className="border-white/5 bg-slate-900/40">
+              <CardContent className="p-20 text-center flex flex-col items-center">
+                <div className="p-4 bg-white/5 rounded-full mb-4">
+                  <Zap className="h-10 w-10 text-slate-600" />
+                </div>
+                <h3 className="text-xl font-black text-white mb-2">
+                  Quiet Sector
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {selectedPlatform 
-                    ? `No live contests on ${selectedPlatform} at the moment.`
-                    : "There are no contests running at the moment. Check back later!"
+                <p className="text-slate-500 max-w-sm">
+                  {selectedPlatform
+                    ? `No active live missions detected in the ${selectedPlatform} sector.`
+                    : "Standard operational status. No live battlegrounds currently active."
                   }
                 </p>
               </CardContent>
-            </Card>
-          ) : selectedPlatform ? (
-            <div className="grid gap-6">
-              {liveContests.map((contest) => (
-                <Card key={contest.id} data-testid={`card-contest-${contest.id}`}>
-                  <CardContent className="p-6">
-                    <ContestCard contest={contest} />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            </MotionCard>
           ) : (
-            <div className="space-y-8">
-              {Object.entries(contestsByPlatform).map(([platform, platformContests]) => {
-                if (platformContests.live.length === 0) return null;
-                return (
-                  <div key={platform}>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2" data-testid={`text-platform-${platform.toLowerCase().replace(/\s+/g, '-')}`}>
-                          <Globe className="h-4 w-4" />
-                          {platform} - Live Contests
-                          <Badge variant="secondary" className="ml-auto">
-                            {platformContests.live.length}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {platformContests.live.map((contest) => (
-                          <ContestCard key={contest.id} contest={contest} />
-                        ))}
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {liveContests.map((contest) => (
+                  <motion.div key={contest.id} variants={itemVariants} layout>
+                    <ContestCard contest={contest} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </TabsContent>
 
-        <TabsContent value="upcoming" className="space-y-6">
+        <TabsContent value="upcoming" className="outline-none">
           {upcomingContests.length === 0 ? (
-            <Card data-testid="card-no-upcoming-contests">
-              <CardContent className="p-12 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  No Upcoming Contests
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  {selectedPlatform 
-                    ? `No upcoming contests on ${selectedPlatform} at the moment.`
-                    : "No contests are scheduled. Check back later!"
-                  }
-                </p>
+            <MotionCard variants={itemVariants} className="border-white/5 bg-slate-900/40">
+              <CardContent className="p-20 text-center">
+                <Search className="h-10 w-10 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-xl font-black text-white mb-2">No Queued Missions</h3>
+                <p className="text-slate-500">The briefing room is clear. Nothing on the horizon.</p>
               </CardContent>
-            </Card>
-          ) : selectedPlatform ? (
-            <div className="grid gap-6">
-              {upcomingContests.map((contest) => (
-                <Card key={contest.id} data-testid={`card-contest-${contest.id}`}>
-                  <CardContent className="p-6">
-                    <ContestCard contest={contest} />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            </MotionCard>
           ) : (
-            <div className="space-y-8">
-              {Object.entries(contestsByPlatform).map(([platform, platformContests]) => {
-                if (platformContests.upcoming.length === 0) return null;
-                return (
-                  <div key={platform}>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center gap-2" data-testid={`text-platform-${platform.toLowerCase().replace(/\s+/g, '-')}`}>
-                          <Globe className="h-4 w-4" />
-                          {platform} - Upcoming Contests
-                          <Badge variant="outline" className="ml-auto">
-                            {platformContests.upcoming.length}
-                          </Badge>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {platformContests.upcoming.map((contest) => (
-                          <ContestCard key={contest.id} contest={contest} />
-                        ))}
-                      </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
-            </div>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              <AnimatePresence>
+                {upcomingContests.map((contest) => (
+                  <motion.div key={contest.id} variants={itemVariants} layout>
+                    <ContestCard contest={contest} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </TabsContent>
 
-        <TabsContent value="completed" className="space-y-6">
+        <TabsContent value="completed" className="outline-none">
           {completedContests.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  No Completed Contests
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Past contests will appear here once they finish.
-                </p>
+            <MotionCard variants={itemVariants} className="border-white/5 bg-slate-900/40">
+              <CardContent className="p-20 text-center">
+                <CheckCircle2 className="h-10 w-10 text-slate-600 mx-auto mb-4" />
+                <h3 className="text-xl font-black text-white mb-2">Archive Empty</h3>
+                <p className="text-slate-500">No mission records have been finalized yet.</p>
               </CardContent>
-            </Card>
+            </MotionCard>
           ) : (
-            <div className="grid gap-6">
-              {completedContests.map((contest: any) => (
-                <Card key={contest.id}>
-                  <CardContent className="p-6">
-                    <ContestCard contest={contest} />
-                  </CardContent>
-                </Card>
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {completedContests.map((contest) => (
+                <motion.div key={contest.id} variants={itemVariants}>
+                  <ContestCard contest={contest} />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </motion.div>
   );
 }
+
