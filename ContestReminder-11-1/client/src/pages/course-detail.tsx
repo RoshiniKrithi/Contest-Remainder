@@ -27,9 +27,11 @@ import ParticlesBackground from "@/components/layout/particles-background";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Course, Lesson, Enrollment } from "@shared/schema";
 import PageTransition from "@/components/layout/page-transition";
+import { useLocation } from "wouter";
 
 export default function CourseDetail() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const userId = "demo-user-123";
 
@@ -205,7 +207,11 @@ export default function CourseDetail() {
                     enrollment={enrollment}
                     courseId={course.id}
                     onEnroll={(courseId) => enrollMutation.mutate(courseId)}
-                    onContinue={(courseId) => {/* Navigate */ }}
+                    onContinue={(courseId) => {
+                      if (lessons.length > 0) {
+                        setLocation(`/course/${courseId}/lesson/${lessons[0].id}`);
+                      }
+                    }}
                     loading={enrollMutation.isPending}
                   />
                 </Card>
@@ -262,7 +268,8 @@ export default function CourseDetail() {
                       key={lesson.id}
                       variants={itemVariants}
                       whileHover={{ x: 6 }}
-                      className="group bg-slate-900/40 border-white/5 hover:border-blue-500/20 hover:bg-slate-900/60 rounded-2xl overflow-hidden p-5 transition-all relative"
+                      onClick={() => setLocation(`/course/${course.id}/lesson/${lesson.id}`)}
+                      className="group bg-slate-900/40 border-white/5 hover:border-blue-500/20 hover:bg-slate-900/60 rounded-2xl overflow-hidden p-5 transition-all relative cursor-pointer"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-5 flex-1">
