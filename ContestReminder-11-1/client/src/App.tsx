@@ -19,9 +19,15 @@ import ContestDetail from "@/pages/contest-detail";
 import CourseDetail from "@/pages/course-detail";
 import LessonDetail from "@/pages/lesson-detail";
 import Problems from "@/pages/problems";
+import ProblemDetail from "@/pages/problem-detail";
 import Profile from "@/pages/profile";
 import PlatformDetail from "@/pages/platform-detail";
 import Leaderboard from "@/pages/leaderboard";
+import Challenges from "@/pages/challenges";
+import TypingChallenge from "@/pages/typing-challenge";
+import AlgorithmQuiz from "@/pages/algorithm-quiz";
+import BrainTeaser from "@/pages/brain-teaser";
+import CodingMarathon from "@/pages/coding-marathon";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import LoadingScreen from "@/components/layout/loading-screen";
@@ -49,9 +55,17 @@ function Router() {
         <ProtectedRoute path="/course/:id" component={CourseDetail} />
         <ProtectedRoute path="/course/:id/lesson/:lessonId" component={LessonDetail} />
         <ProtectedRoute path="/problems" component={Problems} />
+        <ProtectedRoute path="/problems/:id" component={ProblemDetail} />
         <ProtectedAdminRoute path="/profile" component={Profile} />
         <ProtectedRoute path="/leaderboard" component={Leaderboard} />
         <ProtectedRoute path="/platform/:platform" component={PlatformDetail} />
+
+        {/* Challenge Routes */}
+        <ProtectedRoute path="/challenges" component={Challenges} />
+        <ProtectedRoute path="/challenges/typing" component={TypingChallenge} />
+        <ProtectedRoute path="/challenges/quiz" component={AlgorithmQuiz} />
+        <ProtectedRoute path="/challenges/brain-teaser" component={BrainTeaser} />
+        <ProtectedRoute path="/challenges/marathon" component={CodingMarathon} />
         <Route component={NotFound} />
       </Switch>
     </AnimatePresence>

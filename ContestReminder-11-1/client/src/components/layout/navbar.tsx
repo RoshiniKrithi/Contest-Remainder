@@ -1,10 +1,19 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Code, Home, Globe, GraduationCap } from "lucide-react";
+import { Code, Home, Globe, GraduationCap, Flame, Gamepad2 } from "lucide-react";
 import { UserDropdown } from "./user-dropdown";
+import { useQuery } from "@tanstack/react-query";
+
+interface DailyChallengeData {
+  problemId: string;
+  title: string;
+  difficulty: string;
+  streak: number;
+  solvedToday: boolean;
+}
 
 export default function Navbar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const isActive = (path: string) => {
     if (path === "/" && location === "/") return true;
@@ -12,9 +21,14 @@ export default function Navbar() {
     return false;
   };
 
+  const { data: daily } = useQuery<DailyChallengeData>({
+    queryKey: ["/api/daily-challenge"],
+  });
+
   const navItems = [
     { path: "/", label: "Dashboard", icon: Home },
     { path: "/reminders", label: "Live Contests", icon: Globe },
+    { path: "/challenges", label: "Challenges", icon: Gamepad2 },
     { path: "/courses", label: "Courses", icon: GraduationCap },
   ];
 
@@ -65,6 +79,22 @@ export default function Navbar() {
             </div>
             {location !== "/auth" && (
               <div className="flex items-center space-x-6">
+
+                {/* Daily Streak Indicator */}
+                <div
+                  onClick={() => daily?.problemId && setLocation(`/problems/${daily.problemId}`)}
+                  className={`flex items-center gap-3 px-4 py-2 rounded-full border border-orange-500/20 bg-slate-800 hover:bg-slate-700 transition-all duration-300 shadow-lg shadow-black/20 min-w-[90px] justify-center group ${daily?.problemId ? 'cursor-pointer' : 'cursor-wait opacity-80'}`}
+                  title={daily ? `Click to solve Daily Challenge` : "Loading Daily Challenge..."}
+                >
+                  <Flame className={`h-5 w-5 transition-colors duration-200 ${daily?.solvedToday
+                    ? "text-orange-500 fill-orange-500 animate-pulse drop-shadow-[0_0_8px_rgba(249,115,22,1)]"
+                    : "text-slate-400 group-hover:text-orange-400"
+                    }`} />
+                  <span className={`text-sm font-black tracking-wide ${daily?.solvedToday ? "text-orange-400" : "text-slate-200 group-hover:text-white"}`}>
+                    {daily ? daily.streak : "-"}
+                  </span>
+                </div>
+
                 <div className="h-8 w-[1px] bg-white/5 hidden sm:block" />
                 <UserDropdown />
               </div>
