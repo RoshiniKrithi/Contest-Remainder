@@ -17,6 +17,7 @@ import Contests from "@/pages/contests";
 import Courses from "@/pages/courses";
 import ContestDetail from "@/pages/contest-detail";
 import CourseDetail from "@/pages/course-detail";
+import LessonDetail from "@/pages/lesson-detail";
 import Problems from "@/pages/problems";
 import Profile from "@/pages/profile";
 import PlatformDetail from "@/pages/platform-detail";
@@ -46,6 +47,7 @@ function Router() {
         <ProtectedRoute path="/courses" component={Courses} />
         <ProtectedRoute path="/contest/:id" component={ContestDetail} />
         <ProtectedRoute path="/course/:id" component={CourseDetail} />
+        <ProtectedRoute path="/course/:id/lesson/:lessonId" component={LessonDetail} />
         <ProtectedRoute path="/problems" component={Problems} />
         <ProtectedAdminRoute path="/profile" component={Profile} />
         <ProtectedRoute path="/leaderboard" component={Leaderboard} />
