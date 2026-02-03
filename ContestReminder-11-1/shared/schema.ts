@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"), // user, admin
+  streak: integer("streak").default(0),
+  lastDailySolve: timestamp("last_daily_solve"),
 });
 
 export const contests = pgTable("contests", {
@@ -164,3 +166,138 @@ export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
 
 export type UserActivity = typeof userActivity.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
+
+// Challenges - Typing Challenge Tables
+export const typingChallenges = pgTable("typing_challenges", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  code: text("code").notNull(),
+  language: text("language").notNull(), // javascript, python, java, cpp
+  difficulty: text("difficulty").notNull(), // easy, medium, hard
+  lineCount: integer("line_count").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const typingScores = pgTable("typing_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  challengeId: varchar("challenge_id").notNull(),
+  wpm: integer("wpm").notNull(),
+  accuracy: integer("accuracy").notNull(), // 0-100
+  timeSpent: integer("time_spent").notNull(), // seconds
+  completedAt: timestamp("completed_at").default(sql`now()`),
+});
+
+// Challenges - Algorithm Quiz Tables
+export const quizQuestions = pgTable("quiz_questions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  question: text("question").notNull(),
+  codeSnippet: text("code_snippet"),
+  options: jsonb("options").notNull(), // Array of 4 options
+  correctAnswer: integer("correct_answer").notNull(), // 0-3 index
+  topic: text("topic").notNull(), // arrays, graphs, dp, trees, etc.
+  difficulty: text("difficulty").notNull(), // easy, medium, hard
+  explanation: text("explanation").notNull(),
+  timeLimit: integer("time_limit").default(60), // seconds
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const quizAttempts = pgTable("quiz_attempts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  questionIds: jsonb("question_ids").notNull(), // Array of question IDs
+  userAnswers: jsonb("user_answers").notNull(), // Array of user's answers
+  score: integer("score").notNull(),
+  totalQuestions: integer("total_questions").notNull(),
+  topic: text("topic").notNull(),
+  timeSpent: integer("time_spent").notNull(), // seconds
+  completedAt: timestamp("completed_at").default(sql`now()`),
+});
+
+// Challenges - Brain Teaser Tables
+export const brainTeasers = pgTable("brain_teasers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull().unique(), // One per day
+  title: text("title").notNull(),
+  puzzle: text("puzzle").notNull(),
+  hint1: text("hint1"),
+  hint2: text("hint2"),
+  hint3: text("hint3"),
+  solution: text("solution").notNull(),
+  difficulty: text("difficulty").notNull(), // easy, medium, hard
+  explanation: text("explanation").notNull(),
+  category: text("category").notNull(), // logic, math, patterns, algorithms
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const teaserAttempts = pgTable("teaser_attempts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  teaserId: varchar("teaser_id").notNull(),
+  solved: boolean("solved").default(false),
+  hintsUsed: integer("hints_used").default(0),
+  attempts: integer("attempts").default(0),
+  userAnswer: text("user_answer"),
+  solvedAt: timestamp("solved_at"),
+  attemptedAt: timestamp("attempted_at").default(sql`now()`),
+});
+
+// Challenges - Weekly Marathon Tables
+export const marathons = pgTable("marathons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  problemIds: jsonb("problem_ids").notNull(), // Array of problem IDs
+  status: text("status").notNull().default("upcoming"), // upcoming, live, completed
+  difficulty: text("difficulty").notNull(), // easy, medium, hard, mixed
+  participantCount: integer("participant_count").default(0),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const marathonParticipants = pgTable("marathon_participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  marathonId: varchar("marathon_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  problemsSolved: integer("problems_solved").default(0),
+  totalScore: integer("total_score").default(0),
+  rank: integer("rank").default(0),
+  lastSubmissionAt: timestamp("last_submission_at"),
+  registeredAt: timestamp("registered_at").default(sql`now()`),
+});
+
+// Insert schemas for challenges
+export const insertTypingChallengeSchema = createInsertSchema(typingChallenges).omit({ id: true, createdAt: true });
+export const insertTypingScoreSchema = createInsertSchema(typingScores).omit({ id: true, completedAt: true });
+export const insertQuizQuestionSchema = createInsertSchema(quizQuestions).omit({ id: true, createdAt: true });
+export const insertQuizAttemptSchema = createInsertSchema(quizAttempts).omit({ id: true, completedAt: true });
+export const insertBrainTeaserSchema = createInsertSchema(brainTeasers).omit({ id: true, createdAt: true });
+export const insertTeaserAttemptSchema = createInsertSchema(teaserAttempts).omit({ id: true, attemptedAt: true });
+export const insertMarathonSchema = createInsertSchema(marathons).omit({ id: true, createdAt: true, participantCount: true });
+export const insertMarathonParticipantSchema = createInsertSchema(marathonParticipants).omit({ id: true, registeredAt: true, rank: true });
+
+// Types for challenges
+export type TypingChallenge = typeof typingChallenges.$inferSelect;
+export type InsertTypingChallenge = z.infer<typeof insertTypingChallengeSchema>;
+
+export type TypingScore = typeof typingScores.$inferSelect;
+export type InsertTypingScore = z.infer<typeof insertTypingScoreSchema>;
+
+export type QuizQuestion = typeof quizQuestions.$inferSelect;
+export type InsertQuizQuestion = z.infer<typeof insertQuizQuestionSchema>;
+
+export type QuizAttempt = typeof quizAttempts.$inferSelect;
+export type InsertQuizAttempt = z.infer<typeof insertQuizAttemptSchema>;
+
+export type BrainTeaser = typeof brainTeasers.$inferSelect;
+export type InsertBrainTeaser = z.infer<typeof insertBrainTeaserSchema>;
+
+export type TeaserAttempt = typeof teaserAttempts.$inferSelect;
+export type InsertTeaserAttempt = z.infer<typeof insertTeaserAttemptSchema>;
+
+export type Marathon = typeof marathons.$inferSelect;
+export type InsertMarathon = z.infer<typeof insertMarathonSchema>;
+
+export type MarathonParticipant = typeof marathonParticipants.$inferSelect;
+export type InsertMarathonParticipant = z.infer<typeof insertMarathonParticipantSchema>;
