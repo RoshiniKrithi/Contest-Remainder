@@ -23,7 +23,8 @@ function ensureAdmin(req: Request, res: Response, next: NextFunction) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
-  // Contest routes
+
+  // User routes
   app.get("/api/contests", async (req, res) => {
     try {
       const contests = await storage.getAllContests();
