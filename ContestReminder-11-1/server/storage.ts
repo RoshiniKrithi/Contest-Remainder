@@ -359,7 +359,9 @@ export class MemStorage implements IStorage {
       description: insertLesson.description || null,
       isActive: insertLesson.isActive || true,
       duration: insertLesson.duration || null,
-      videoUrl: insertLesson.videoUrl || null
+      videoUrl: insertLesson.videoUrl || null,
+      quizData: insertLesson.quizData || null,
+      type: insertLesson.type || "theory"
     };
     this.lessons.set(id, lesson);
     return lesson;
@@ -619,7 +621,6 @@ export class MemStorage implements IStorage {
   }
 
   private initializeSampleLessons(): void {
-    // Get all course IDs
     const courseIds = Array.from(this.courses.keys());
 
     courseIds.forEach(courseId => {
@@ -628,166 +629,212 @@ export class MemStorage implements IStorage {
 
       let lessons: Array<Omit<Lesson, 'id' | 'createdAt'>> = [];
 
-      // Create different lesson sets based on course title
       if (course.title.includes("Programming Fundamentals")) {
         lessons = [
           {
             courseId,
-            title: "Introduction to Programming",
-            description: "Understanding what programming is and basic concepts",
-            content: "Learn the fundamental concepts of programming including algorithms, data, and control structures.",
+            title: "The Briefing: C++ Foundations",
+            description: "Master the syntax and logic of C++ programming.",
+            content: "Welcome to the front lines of software development. In this briefing, you'll learn the core syntax of C++, including headers, namespaces, and the main entry point of every tactical application.",
             order: 1,
-            duration: 45,
-            videoUrl: null,
-            isActive: true
+            duration: 31,
+            videoUrl: "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the correct syntax to output 'Hello World' in C++?",
+                options: ["system.out.println(\"Hello World\");", "console.log(\"Hello World\");", "cout << \"Hello World\";", "print(\"Hello World\");"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "Which directive is used to include the input-output stream library?",
+                options: ["#include <iostream>", "#import <stream>", "using namespace std;", "void main()"],
+                correctAnswerIndex: 0
+              }
+            ]
           },
           {
             courseId,
-            title: "Variables and Data Types",
-            description: "Working with different types of data in programming",
-            content: "Explore different data types including numbers, strings, booleans, and how to store them in variables.",
+            title: "Mission: Data Types & Variables",
+            description: "Learn how to store and manipulate mission-critical data.",
+            content: "Variables are the storage containers of your code. In this segment, we explore integers, strings, and booleans, and how to allocate memory for your tactical operations.",
             order: 2,
-            duration: 30,
+            duration: 15,
             videoUrl: null,
-            isActive: true
-          },
-          {
-            courseId,
-            title: "Control Flow - Conditionals",
-            description: "Making decisions in your code with if statements",
-            content: "Learn how to use if, else if, and else statements to control program flow.",
-            order: 3,
-            duration: 40,
-            videoUrl: null,
-            isActive: true
-          },
-          {
-            courseId,
-            title: "Control Flow - Loops",
-            description: "Repeating code execution with loops",
-            content: "Master for loops, while loops, and understanding when to use each type.",
-            order: 4,
-            duration: 35,
-            videoUrl: null,
-            isActive: true
-          },
-          {
-            courseId,
-            title: "Functions and Methods",
-            description: "Creating reusable code blocks",
-            content: "Learn how to write functions, pass parameters, and return values.",
-            order: 5,
-            duration: 50,
-            videoUrl: null,
-            isActive: true
+            type: "theory",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which data type is specifically used to store text sequences?",
+                options: ["int", "char", "string", "double"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "What is the result of '5 / 2' in integer division in C++?",
+                options: ["2.5", "2", "3", "Error"],
+                correctAnswerIndex: 1
+              }
+            ]
           }
         ];
-      } else if (course.title.includes("Data Structures")) {
+      } else if (course.title.includes("Data Structures Essentials")) {
         lessons = [
           {
             courseId,
             title: "Introduction to Data Structures",
-            description: "Understanding why data structures matter",
-            content: "Learn the importance of data organization and efficiency in programming.",
+            description: "Visualize how data is organized in physical memory.",
+            content: "Data structures are the backbone of efficient software. We'll start with an overview of how computers store information and the basic categories of data organization.",
             order: 1,
-            duration: 30,
-            videoUrl: null,
-            isActive: true
+            duration: 45,
+            videoUrl: "https://www.youtube.com/embed/8hly31xKli0",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the time complexity to insert an element at the beginning of an array?",
+                options: ["O(1)", "O(log n)", "O(n)", "O(n^2)"],
+                correctAnswerIndex: 2
+              }
+            ]
           },
           {
             courseId,
             title: "Arrays and Lists",
-            description: "Working with ordered collections of data",
-            content: "Master arrays, dynamic arrays, and list operations.",
+            description: "Deep dive into contiguous memory and dynamic sizing.",
+            content: "Arrays are the most fundamental data structure. We explore how they are indexed and how dynamic arrays (like vectors) handle resizing.",
             order: 2,
-            duration: 45,
-            videoUrl: null,
-            isActive: true
+            duration: 30,
+            videoUrl: "https://www.youtube.com/embed/Zv7vS_3K4h8",
+            type: "video",
+            isActive: true,
+            quizData: []
           },
           {
             courseId,
             title: "Linked Lists",
-            description: "Understanding pointer-based data structures",
-            content: "Learn singly and doubly linked lists and their applications.",
+            description: "Node-based data organization.",
+            content: "Linked lists offer flexible memory management. We'll compare them to arrays and understand pointers.",
             order: 3,
-            duration: 55,
-            videoUrl: null,
-            isActive: true
+            duration: 25,
+            videoUrl: "https://www.youtube.com/embed/Hj_rUuM8Y_0",
+            type: "video",
+            isActive: true,
+            quizData: []
           },
           {
             courseId,
             title: "Stacks and Queues",
-            description: "LIFO and FIFO data structures",
-            content: "Implement and use stacks and queues for various problems.",
+            description: "LIFO and FIFO tactical data structures.",
+            content: "Master the stack (Last-In-First-Out) and queue (First-In-First-Out) protocols.",
             order: 4,
-            duration: 40,
-            videoUrl: null,
-            isActive: true
+            duration: 20,
+            videoUrl: "https://www.youtube.com/embed/A3ZNCqZ0NoM",
+            type: "video",
+            isActive: true,
+            quizData: []
           }
         ];
-      } else {
-        // Generic lesson structure for other courses
+      }
+      else if (course.title.includes("Algorithms Design & Analysis")) {
         lessons = [
           {
             courseId,
-            title: "Course Introduction",
-            description: "Welcome and course overview",
-            content: "Introduction to the course objectives and learning outcomes.",
+            title: "Strategy: Big O & Sorting",
+            description: "Analyze the efficiency of your tactical maneuvers.",
+            content: "In competitive programming, speed is everything. We use Big O notation to measure the time and space complexity of our algorithms. Today, we optimize our sorting strategies.",
             order: 1,
-            duration: 20,
-            videoUrl: null,
-            isActive: true
-          },
+            duration: 52,
+            videoUrl: "https://www.youtube.com/embed/RBSGKlAvoiM",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the worst-case time complexity of Merge Sort?",
+                options: ["O(n)", "O(n log n)", "O(n^2)", "O(log n)"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "Big O notation describes what aspect of an algorithm?",
+                options: ["Readability", "Memory usage only", "Upper bound of execution time", "The number of lines of code"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        ];
+      } else if (course.title.includes("Competitive Programming Mastery")) {
+        lessons = [
           {
             courseId,
-            title: "Core Concepts",
-            description: "Fundamental concepts and principles",
-            content: "Deep dive into the core concepts that form the foundation of this topic.",
-            order: 2,
+            title: "Combat Readiness: Starting Your CP Journey",
+            description: "Set up your environment and solve your first problem.",
+            content: "The road to Grandmaster starts here. Learn how to parse input, use the STL (Standard Template Library), and manage your time during intensive coding contests.",
+            order: 1,
+            duration: 25,
+            videoUrl: "https://www.youtube.com/embed/09_LlHjoEiY",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What does STL stand for in C++?",
+                options: ["Standard Transmission Language", "Simple Teaching Level", "Standard Template Library", "Single Threaded Link"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        ];
+      } else if (course.title.includes("System Design")) {
+        lessons = [
+          {
+            courseId,
+            title: "Architecture: Scalable Systems",
+            description: "Design systems that can handle millions of tactical requests.",
+            content: "Building for scale requires understanding Load Balancers, Caching, and Database Sharding. We'll design a system from the ground up to handle high-traffic operations.",
+            order: 1,
             duration: 40,
-            videoUrl: null,
-            isActive: true
-          },
+            videoUrl: "https://www.youtube.com/embed/m8Icp_Cid5o",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which component is used to distribute incoming traffic across multiple servers?",
+                options: ["Database", "Cache", "Load Balancer", "Firewall"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        ];
+      } else {
+        lessons = [
           {
             courseId,
-            title: "Practical Applications",
-            description: "Real-world examples and use cases",
-            content: "Explore practical applications and hands-on examples.",
-            order: 3,
-            duration: 60,
-            videoUrl: null,
-            isActive: true
-          },
-          {
-            courseId,
-            title: "Advanced Techniques",
-            description: "Advanced methods and best practices",
-            content: "Learn advanced techniques and industry best practices.",
-            order: 4,
-            duration: 45,
-            videoUrl: null,
-            isActive: true
-          },
-          {
-            courseId,
-            title: "Final Project",
-            description: "Apply your knowledge in a comprehensive project",
-            content: "Complete a final project that demonstrates your mastery of the subject.",
-            order: 5,
-            duration: 90,
-            videoUrl: null,
-            isActive: true
+            title: "Course Briefing",
+            description: "Initial intel on the course objectives",
+            content: "Standard operational procedure for this tactical module. Review the briefing carefully before proceeding to the extraction protocol.",
+            order: 1,
+            duration: 10,
+            videoUrl: "https://www.youtube.com/embed/u6O62Wv-mD8",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Are you ready to begin the mission?",
+                options: ["Affirmative", "Negative"],
+                correctAnswerIndex: 0
+              }
+            ]
           }
         ];
       }
 
-      // Create lesson objects and add them to storage
       lessons.forEach(lessonData => {
         const id = randomUUID();
         const lesson: Lesson = {
           ...lessonData,
           id,
-          createdAt: new Date()
+          createdAt: new Date(),
+          quizData: lessonData.quizData || null,
+          type: (lessonData.type as string | null) || "video"
         };
         this.lessons.set(id, lesson);
       });
@@ -809,6 +856,75 @@ export class DatabaseStorage implements IStorage {
       },
       tableName: 'session',
     });
+    this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
+  }
+
+  async autoPatchDatabase() {
+    try {
+      console.log("📡 Intelligence Sync: Initializing...");
+      // Small delay to ensure DB connection is stable
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      const existingLessons = await this.db.select().from(lessons);
+      console.log(`📡 Intelligence Sync: Found ${existingLessons.length} records.`);
+
+      const patches = [
+        {
+          title: "Introduction to Data Structures",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/8hly31xKli0",
+            type: "video",
+            content: "Data structures are the backbone of efficient software. We'll start with an overview of how computers store information and the basic categories of data organization."
+          }
+        },
+        {
+          title: "Arrays and Lists",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/Zv7vS_3K4h8",
+            type: "video",
+            content: "Arrays are the most fundamental data structure. We explore how they are indexed and how dynamic arrays (like vectors) handle resizing."
+          }
+        },
+        {
+          title: "Linked Lists",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/Hj_rUuM8Y_0",
+            type: "video",
+            content: "Linked lists offer flexible memory management. We'll compare them to arrays and understand pointers."
+          }
+        },
+        {
+          title: "Stacks and Queues",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/A3ZNCqZ0NoM",
+            type: "video",
+            content: "Master the stack (Last-In-First-Out) and queue (First-In-First-Out) protocols."
+          }
+        },
+        {
+          title: "The Briefing: C++ Foundations",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            type: "video"
+          }
+        }
+      ];
+
+      for (const patch of patches) {
+        const matchingLesson = existingLessons.find((l: any) => l.title === patch.title);
+        if (matchingLesson) {
+          console.log(`📡 Intelligence Sync: Updating mission -> ${patch.title}`);
+          await this.db.update(lessons)
+            .set(patch.updates)
+            .where(eq(lessons.id, matchingLesson.id));
+        } else {
+          console.log(`📡 Intelligence Sync: Mission not found -> ${patch.title}`);
+        }
+      }
+      console.log("📡 Intelligence Sync: Complete.");
+    } catch (error) {
+      console.warn("Intelligence sync deferred: ", error);
+    }
   }
 
   // User operations
