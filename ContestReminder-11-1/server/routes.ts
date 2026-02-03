@@ -114,21 +114,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simple evaluation logic - in real implementation, this would run code
       const problem = await storage.getProblem(validatedData.problemId);
       if (problem) {
+        // Evaluate submission
         const status = Math.random() > 0.3 ? "accepted" : "wrong_answer";
         const score = status === "accepted" ? problem.points : 0;
         await storage.updateSubmissionStatus(submission.id, status, score);
 
-        // Track activity (credit 15 mins for attempting/solving, and 1 question if accepted)
         if (status === "accepted") {
           await storage.trackUserActivity(validatedData.userId, 15, 1);
+
+          // Check for daily challenge streak
+          // Simple deterministic check: if problem title contains "Data" and it's today (mock logic)
+          // In real app, we check against the daily problem ID
+          const dailyChallenge = await getDailyProblem();
+
+          if (dailyChallenge && dailyChallenge.id === problem.id) {
+            const user = await storage.getUser(validatedData.userId);
+            if (user) {
+              const lastSolve = user.lastDailySolve ? new Date(user.lastDailySolve) : null;
+              const now = new Date();
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+              const lastSolveDate = lastSolve ? new Date(lastSolve.getFullYear(), lastSolve.getMonth(), lastSolve.getDate()).getTime() : 0;
+
+              // If not solved today
+              if (lastSolveDate < today) {
+                const yesterday = today - 86400000;
+                let newStreak = 1;
+
+                // If solved yesterday, increment. Else reset to 1.
+                if (lastSolveDate === yesterday) {
+                  newStreak = (user.streak || 0) + 1;
+                }
+
+                await storage.updateUserStreak(user.id, newStreak);
+              }
+            }
+          }
         } else {
-          await storage.trackUserActivity(validatedData.userId, 15, 0); // Credit time for attempt
+          await storage.trackUserActivity(validatedData.userId, 15, 0);
         }
       }
 
       res.status(201).json(submission);
     } catch (error) {
       res.status(400).json({ error: "Invalid submission data" });
+    }
+  });
+
+  // Daily Challenge Endpoint
+  async function getDailyProblem() {
+    // Deterministic selection based on date
+    const allProblems = [];
+    const contests = await storage.getAllContests();
+    for (const contest of contests) {
+      const contestProblems = await storage.getProblemsByContest(contest.id);
+      allProblems.push(...contestProblems);
+    }
+
+    if (allProblems.length === 0) return null;
+
+    const today = new Date();
+    const hash = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const index = hash % allProblems.length;
+    return allProblems[index];
+  }
+
+  app.get("/api/daily-challenge", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const problem = await getDailyProblem();
+      if (!problem) {
+        return res.status(404).json({ error: "No daily challenge available" });
+      }
+
+      const user = await storage.getUser(req.user.id);
+      const lastSolve = user?.lastDailySolve ? new Date(user.lastDailySolve) : null;
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const lastSolveDate = lastSolve ? new Date(lastSolve.getFullYear(), lastSolve.getMonth(), lastSolve.getDate()).getTime() : 0;
+
+      const solvedToday = lastSolveDate === today;
+
+      res.json({
+        problemId: problem.id,
+        title: problem.title,
+        difficulty: problem.difficulty,
+        streak: user?.streak || 0,
+        solvedToday
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch daily challenge" });
     }
   });
 
@@ -597,6 +674,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch activity" });
     }
   });
+
+  // ==================== CHALLENGE ROUTES ====================
+
+  // Challenge Overview Stats
+  app.get("/api/challenges/stats", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const userId = req.user.id;
+      const stats = await storage.getChallengeStats(userId);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch challenge stats" });
+    }
+  });
+
+  // Typing Challenge Routes
+  app.get("/api/challenges/typing/snippets", async (req, res) => {
+    try {
+      const { difficulty = "easy", language = "javascript" } = req.query;
+      const snippet = await storage.getRandomTypingChallenge(
+        difficulty as string,
+        language as string
+      );
+      if (!snippet) {
+        return res.status(404).json({ error: "No snippets found" });
+      }
+      res.json(snippet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch typing challenge" });
+    }
+  });
+
+  app.post("/api/challenges/typing/submit", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { challengeId, wpm, accuracy, timeSpent } = req.body;
+      const score = await storage.submitTypingScore({
+        userId: req.user.id,
+        challengeId,
+        wpm,
+        accuracy,
+        timeSpent,
+      });
+      res.status(201).json(score);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to submit typing score" });
+    }
+  });
+
+  app.get("/api/challenges/typing/leaderboard", async (req, res) => {
+    try {
+      const leaderboard = await storage.getTypingLeaderboard();
+      res.json(leaderboard);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch leaderboard" });
+    }
+  });
+
+  // Quiz Challenge Routes
+  app.get("/api/challenges/quiz/questions", async (req, res) => {
+    try {
+      const { topic = "arrays", difficulty = "medium", count = "10" } = req.query;
+      const questions = await storage.getQuizQuestions(
+        topic as string,
+        difficulty as string,
+        parseInt(count as string)
+      );
+      res.json(questions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quiz questions" });
+    }
+  });
+
+  app.post("/api/challenges/quiz/submit", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { questionIds, userAnswers, score, totalQuestions, topic, timeSpent } = req.body;
+      const attempt = await storage.submitQuizAttempt({
+        userId: req.user.id,
+        questionIds,
+        userAnswers,
+        score,
+        totalQuestions,
+        topic,
+        timeSpent,
+      });
+      res.status(201).json(attempt);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to submit quiz attempt" });
+    }
+  });
+
+  app.get("/api/challenges/quiz/stats", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const stats = await storage.getQuizStats(req.user.id);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch quiz stats" });
+    }
+  });
+
+  // Brain Teaser Routes
+  app.get("/api/challenges/brain-teaser/daily", async (req, res) => {
+    try {
+      const teaser = await storage.getDailyBrainTeaser();
+      if (!teaser) {
+        return res.status(404).json({ error: "No brain teaser available" });
+      }
+      res.json(teaser);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch brain teaser" });
+    }
+  });
+
+  app.get("/api/challenges/brain-teaser/attempt/:teaserId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const attempt = await storage.getTeaserAttempt(req.user.id, req.params.teaserId);
+      res.json(attempt || { solved: false, hintsUsed: 0, attempts: 0 });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch attempt" });
+    }
+  });
+
+  app.post("/api/challenges/brain-teaser/submit", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { teaserId, answer } = req.body;
+      const result = await storage.submitTeaserAnswer(req.user.id, teaserId, answer);
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to submit answer" });
+    }
+  });
+
+  app.post("/api/challenges/brain-teaser/hint", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { teaserId } = req.body;
+      await storage.recordHintUsed(req.user.id, teaserId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: "Failed to record hint" });
+    }
+  });
+
+  app.get("/api/challenges/brain-teaser/calendar", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const calendar = await storage.getTeaserCalendar(req.user.id);
+      res.json(calendar);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch calendar" });
+    }
+  });
+
+  // Marathon Routes
+  app.get("/api/challenges/marathon/active", async (req, res) => {
+    try {
+      const marathon = await storage.getActiveMarathon();
+      res.json(marathon);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch active marathon" });
+    }
+  });
+
+  app.get("/api/challenges/marathon/upcoming", async (req, res) => {
+    try {
+      const marathons = await storage.getUpcomingMarathons();
+      res.json(marathons);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch upcoming marathons" });
+    }
+  });
+
+  app.post("/api/challenges/marathon/register", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { marathonId } = req.body;
+      const participant = await storage.registerForMarathon(req.user.id, marathonId);
+      res.status(201).json(participant);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to register for marathon" });
+    }
+  });
+
+  app.get("/api/challenges/marathon/leaderboard/:marathonId", async (req, res) => {
+    try {
+      const leaderboard = await storage.getMarathonLeaderboard(req.params.marathonId);
+      res.json(leaderboard);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch leaderboard" });
+    }
+  });
+
+  app.get("/api/challenges/marathon/participation/:marathonId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const participation = await storage.getMarathonParticipation(
+        req.user.id,
+        req.params.marathonId
+      );
+      res.json(participation || { registered: false, problemsSolved: 0, totalScore: 0 });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch participation" });
+    }
+  });
+
+  // ==================== END CHALLENGE ROUTES ====================
+
 
   const httpServer = createServer(app);
 
