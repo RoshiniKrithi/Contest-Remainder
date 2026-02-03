@@ -84,6 +84,8 @@ export const lessons = pgTable("lessons", {
   order: integer("order").notNull(),
   duration: integer("duration").default(0), // Duration in minutes
   videoUrl: text("video_url"), // Optional video content
+  quizData: jsonb("quiz_data"), // Array of {question, options[], correctAnswerIndex}
+  type: text("type").default("video"), // video, quiz, theory
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").default(sql`now()`),
 });
