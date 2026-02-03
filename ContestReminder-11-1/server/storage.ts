@@ -25,9 +25,18 @@ import {
   lessonProgress,
   userActivity,
   type UserActivity,
-  type InsertUserActivity
+  type InsertUserActivity,
+  typingChallenges,
+  typingScores,
+  quizQuestions,
+  quizAttempts,
+  brainTeasers,
+  teaserAttempts,
+  marathons,
+  marathonParticipants
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
@@ -43,6 +52,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUserStreak(userId: string, streak: number): Promise<User>;
 
   // Activity Report operations
   getUserActivity(userId: string): Promise<UserActivity[]>;
@@ -90,6 +100,21 @@ export interface IStorage {
   updateLessonProgress(enrollmentId: string, lessonId: string, userId: string, completed: boolean, timeSpent?: number): Promise<LessonProgress>;
   getLessonProgress(userId: string, lessonId: string): Promise<LessonProgress | undefined>;
   getEnrollmentLessonProgress(enrollmentId: string): Promise<LessonProgress[]>;
+
+  // Challenge operations
+  getChallengeStats(userId: string): Promise<any>;
+  getRandomTypingChallenge(difficulty: string, language: string): Promise<any>;
+  submitTypingScore(data: any): Promise<any>;
+  getTypingLeaderboard(): Promise<any[]>;
+  getQuizQuestions(topic: string, difficulty: string, count: number): Promise<any[]>;
+  submitQuizAttempt(data: any): Promise<any>;
+  getQuizStats(userId: string): Promise<any>;
+  getDailyBrainTeaser(): Promise<any>;
+  getTeaserAttempt(userId: string, teaserId: string): Promise<any>;
+  submitTeaserAnswer(userId: string, teaserId: string, answer: string): Promise<any>;
+  recordHintUsed(userId: string, teaserId: string): Promise<void>;
+  getTeaserCalendar(userId: string): Promise<any[]>;
+  getBrainTeaserStats(userId: string): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -103,6 +128,12 @@ export class MemStorage implements IStorage {
   private enrollments: Map<string, Enrollment>;
   private lessonProgress: Map<string, LessonProgress>;
   private userActivity: Map<string, UserActivity>;
+  private typingChallenges: Map<string, any>;
+  private typingScores: Map<string, any>;
+  private quizQuestions: Map<string, any>;
+  private quizAttempts: Map<string, any>;
+  private brainTeasers: Map<string, any>;
+  private brainTeaserSolutions: Map<string, any>;
 
   constructor() {
     this.sessionStore = new MemoryStore({
@@ -117,9 +148,75 @@ export class MemStorage implements IStorage {
     this.enrollments = new Map();
     this.lessonProgress = new Map();
     this.userActivity = new Map();
+    this.typingChallenges = new Map();
+    this.typingScores = new Map();
+    this.quizQuestions = new Map();
+    this.quizAttempts = new Map();
+    this.brainTeasers = new Map();
+    this.brainTeaserSolutions = new Map();
     this.initializeSampleCourses();
     this.initializeSampleLessons();
+    this.initializeSampleContests();
     this.initializeAdminUser();
+    this.seedChallenges();
+  }
+
+  private seedChallenges() {
+    typingSeed.forEach(c => this.typingChallenges.set(c.id, c));
+    quizSeed.forEach(q => this.quizQuestions.set(q.id, q));
+    teaserSeed.forEach(t => this.brainTeasers.set(t.id, t));
+  }
+
+  private async initializeSampleContests() {
+    // Create a sample contest
+    const contestId = randomUUID();
+    const contest: Contest = {
+      id: contestId,
+      title: "Daily Coding Challenge",
+      description: "Daily algorithmic challenges to test your skills.",
+      startTime: new Date(),
+      endTime: new Date(Date.now() + 86400000 * 365), // 1 year duration
+      status: "live",
+      participants: 0,
+      createdBy: "system"
+    };
+    this.contests.set(contestId, contest);
+
+    // Create sample problems
+    const problems = [
+      {
+        title: "Two Sum",
+        description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 2000,
+        memoryLimit: 256,
+        testCases: [
+          { input: "[2,7,11,15], 9", output: "[0,1]" },
+          { input: "[3,2,4], 6", output: "[1,2]" }
+        ]
+      },
+      {
+        title: "Reverse String",
+        description: "Write a function that reverses a string. The input string is given as an array of characters s.\n\nYou must do this by modifying the input array in-place with O(1) extra memory.",
+        difficulty: "medium",
+        points: 200,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: '["h","e","l","l","o"]', output: '["o","l","l","e","h"]' }
+        ]
+      }
+    ];
+
+    for (const p of problems) {
+      const pId = randomUUID();
+      this.problems.set(pId, {
+        id: pId,
+        contestId,
+        ...p
+      });
+    }
   }
 
   private async initializeAdminUser() {
@@ -145,7 +242,9 @@ export class MemStorage implements IStorage {
       id,
       username: "admin",
       password: hashedPassword,
-      role: "admin"
+      role: "admin",
+      streak: 0,
+      lastDailySolve: null
     };
 
     this.users.set(id, adminUser);
@@ -205,10 +304,20 @@ export class MemStorage implements IStorage {
     const user: User = {
       ...insertUser,
       id,
-      role: insertUser.username === "admin" ? "admin" : (insertUser.role || "user")
+      role: insertUser.username === "admin" ? "admin" : (insertUser.role || "user"),
+      streak: 0,
+      lastDailySolve: null
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async updateUserStreak(userId: string, streak: number): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error("User not found");
+    const updated = { ...user, streak, lastDailySolve: new Date() };
+    this.users.set(userId, updated);
+    return updated;
   }
 
   // Contest operations
@@ -513,6 +622,152 @@ export class MemStorage implements IStorage {
     return Array.from(this.lessonProgress.values())
       .filter(p => p.enrollmentId === enrollmentId)
       .sort((a, b) => new Date(b.lastAccessedAt || new Date()).getTime() - new Date(a.lastAccessedAt || new Date()).getTime());
+  }
+
+  // Challenge operations
+  async getChallengeStats(userId: string): Promise<any> {
+    const typing = Array.from(this.typingScores.values()).filter(s => s.userId === userId);
+    const quizzes = Array.from(this.quizAttempts.values()).filter(a => a.userId === userId);
+    const teasers = Array.from(this.brainTeaserSolutions.values()).filter(s => s.userId === userId && s.solved);
+
+    return {
+      typing: {
+        completed: typing.length,
+        avgWpm: typing.length ? Math.round(typing.reduce((acc, curr) => acc + curr.wpm, 0) / typing.length) : 0,
+        bestWpm: typing.length ? Math.max(...typing.map(t => t.wpm)) : 0,
+      },
+      quizzes: {
+        completed: quizzes.length,
+        avgScore: quizzes.length ? Math.round(quizzes.reduce((acc, curr) => acc + curr.score, 0) / quizzes.length) : 0,
+      },
+      brainTeasers: {
+        solved: teasers.length,
+      }
+    };
+  }
+
+  async getRandomTypingChallenge(difficulty: string, language: string): Promise<any> {
+    const filtered = Array.from(this.typingChallenges.values()).filter(
+      c => c.difficulty === difficulty && c.language === language
+    );
+    if (!filtered.length) return null;
+    return filtered[Math.floor(Math.random() * filtered.length)];
+  }
+
+  async submitTypingScore(data: any): Promise<any> {
+    const id = randomUUID();
+    const score = { ...data, id, completedAt: new Date() };
+    this.typingScores.set(id, score);
+    return score;
+  }
+
+  async getTypingLeaderboard(): Promise<any[]> {
+    return Array.from(this.typingScores.values())
+      .sort((a, b) => b.wpm - a.wpm)
+      .slice(0, 10)
+      .map(s => {
+        const user = Array.from(this.users.values()).find(u => u.id === s.userId);
+        return { ...s, username: user?.username || "Unknown" };
+      });
+  }
+
+  async getQuizQuestions(topic: string, difficulty: string, count: number): Promise<any[]> {
+    const filtered = Array.from(this.quizQuestions.values()).filter(
+      q => q.topic === topic && q.difficulty === difficulty
+    );
+    return filtered.sort(() => 0.5 - Math.random()).slice(0, count);
+  }
+
+  async submitQuizAttempt(data: any): Promise<any> {
+    const id = randomUUID();
+    const attempt = { ...data, id, completedAt: new Date() };
+    this.quizAttempts.set(id, attempt);
+    return attempt;
+  }
+
+  async getQuizStats(userId: string): Promise<any> {
+    const userAttempts = Array.from(this.quizAttempts.values()).filter(a => a.userId === userId);
+    return {
+      totalAttempts: userAttempts.length,
+      avgScore: userAttempts.length ? Math.round(userAttempts.reduce((acc, curr) => acc + curr.score, 0) / userAttempts.length) : 0,
+      bestScore: userAttempts.length ? Math.max(...userAttempts.map(a => a.score)) : 0,
+    };
+  }
+
+  async getDailyBrainTeaser(): Promise<any> {
+    const today = new Date().toISOString().split('T')[0];
+    return Array.from(this.brainTeasers.values()).find(t => t.date.startsWith(today)) || null;
+  }
+
+  async getTeaserAttempt(userId: string, teaserId: string): Promise<any> {
+    return Array.from(this.brainTeaserSolutions.values()).find(
+      s => s.userId === userId && s.teaserId === teaserId
+    ) || null;
+  }
+
+  async submitTeaserAnswer(userId: string, teaserId: string, answer: string): Promise<any> {
+    const teaser = Array.from(this.brainTeasers.values()).find(t => t.id === teaserId);
+    if (!teaser) throw new Error("Teaser not found");
+
+    const correct = answer.toLowerCase().trim() === teaser.solution.toLowerCase().trim();
+    const existing = await this.getTeaserAttempt(userId, teaserId);
+
+    if (existing) {
+      existing.attempts += 1;
+      existing.solved = existing.solved || correct;
+      existing.userAnswer = answer;
+      if (correct && !existing.solvedAt) existing.solvedAt = new Date();
+      return { correct, attempt: existing };
+    } else {
+      const id = randomUUID();
+      const attempt = {
+        id,
+        userId,
+        teaserId,
+        solved: correct,
+        hintsUsed: 0,
+        attempts: 1,
+        userAnswer: answer,
+        attemptedAt: new Date(),
+        solvedAt: correct ? new Date() : null
+      };
+      this.brainTeaserSolutions.set(id, attempt);
+      return { correct, attempt };
+    }
+  }
+
+  async recordHintUsed(userId: string, teaserId: string): Promise<void> {
+    const existing = await this.getTeaserAttempt(userId, teaserId);
+    if (existing) {
+      existing.hintsUsed = (existing.hintsUsed || 0) + 1;
+    } else {
+      const id = randomUUID();
+      const attempt = {
+        id,
+        userId,
+        teaserId,
+        solved: false,
+        hintsUsed: 1,
+        attempts: 0,
+        attemptedAt: new Date(),
+        solvedAt: null
+      };
+      this.brainTeaserSolutions.set(id, attempt);
+    }
+  }
+
+  async getTeaserCalendar(userId: string): Promise<any[]> {
+    return Array.from(this.brainTeaserSolutions.values())
+      .filter(s => s.userId === userId)
+      .map(a => ({ date: a.attemptedAt, solved: a.solved }));
+  }
+
+  async getBrainTeaserStats(userId: string): Promise<any> {
+    const userSolutions = Array.from(this.brainTeaserSolutions.values()).filter(s => s.userId === userId);
+    return {
+      totalAttempts: userSolutions.length,
+      solved: userSolutions.filter(s => s.solved).length,
+    };
   }
 
   private initializeSampleCourses(): void {
@@ -922,8 +1177,46 @@ export class DatabaseStorage implements IStorage {
         }
       }
       console.log("📡 Intelligence Sync: Complete.");
+      await this.seedChallenges();
     } catch (error) {
       console.warn("Intelligence sync deferred: ", error);
+    }
+  }
+
+  async seedChallenges() {
+    try {
+      console.log("🌱 Challenges Sync: Initializing...");
+
+      // Seed Typing Challenges
+      for (const challenge of typingSeed) {
+        const existing = await this.db.select().from(typingChallenges).where(eq(typingChallenges.id, challenge.id)).limit(1);
+        if (!existing.length) {
+          await this.db.insert(typingChallenges).values(challenge);
+        }
+      }
+
+      // Seed Quiz Questions
+      for (const question of quizSeed) {
+        const existing = await this.db.select().from(quizQuestions).where(eq(quizQuestions.id, question.id)).limit(1);
+        if (!existing.length) {
+          await this.db.insert(quizQuestions).values(question);
+        }
+      }
+
+      // Seed Brain Teasers
+      for (const teaser of teaserSeed) {
+        const existing = await this.db.select().from(brainTeasers).where(eq(brainTeasers.id, teaser.id)).limit(1);
+        if (!existing.length) {
+          await this.db.insert(brainTeasers).values({
+            ...teaser,
+            date: new Date(teaser.date)
+          });
+        }
+      }
+
+      console.log("🌱 Challenges Sync: Complete.");
+    } catch (error) {
+      console.warn("Challenges sync deferred: ", error);
     }
   }
 
@@ -946,6 +1239,14 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await this.db.select().from(users);
+  }
+
+  async updateUserStreak(userId: string, streak: number): Promise<User> {
+    const result = await this.db.update(users)
+      .set({ streak, lastDailySolve: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    return result[0];
   }
 
   async getUserActivity(userId: string): Promise<UserActivity[]> {
@@ -1257,6 +1558,161 @@ export class DatabaseStorage implements IStorage {
     return await this.db.select().from(lessonProgress)
       .where(eq(lessonProgress.enrollmentId, enrollmentId))
       .orderBy(desc(lessonProgress.lastAccessedAt));
+  }
+
+  // Challenge operations
+  async getChallengeStats(userId: string): Promise<any> {
+    const scores = await this.db.select().from(typingScores).where(eq(typingScores.userId, userId));
+    const attempts = await this.db.select().from(quizAttempts).where(eq(quizAttempts.userId, userId));
+    const teaserSolves = await this.db.select().from(teaserAttempts).where(
+      and(eq(teaserAttempts.userId, userId), eq(teaserAttempts.solved, true))
+    );
+
+    return {
+      typing: {
+        completed: scores.length,
+        avgWpm: scores.length ? Math.round(scores.reduce((acc: any, curr: any) => acc + curr.wpm, 0) / scores.length) : 0,
+        bestWpm: scores.length ? Math.max(...scores.map((s: any) => s.wpm)) : 0,
+      },
+      quizzes: {
+        completed: attempts.length,
+        avgScore: attempts.length ? Math.round(attempts.reduce((acc: any, curr: any) => acc + curr.score, 0) / attempts.length) : 0,
+      },
+      brainTeasers: {
+        solved: teaserSolves.length,
+      }
+    };
+  }
+
+  async getRandomTypingChallenge(difficulty: string, language: string): Promise<any> {
+    const results = await this.db.select().from(typingChallenges).where(
+      and(
+        eq(typingChallenges.difficulty, difficulty),
+        eq(typingChallenges.language, language)
+      )
+    );
+    if (!results.length) return null;
+    return results[Math.floor(Math.random() * results.length)];
+  }
+
+  async submitTypingScore(data: any): Promise<any> {
+    const result = await this.db.insert(typingScores).values(data).returning();
+    return result[0];
+  }
+
+  async getTypingLeaderboard(): Promise<any[]> {
+    const scores = await this.db.select({
+      userId: typingScores.userId,
+      wpm: typingScores.wpm,
+      accuracy: typingScores.accuracy,
+      username: users.username,
+      completedAt: typingScores.completedAt
+    })
+      .from(typingScores)
+      .innerJoin(users, eq(typingScores.userId, users.id))
+      .orderBy(desc(typingScores.wpm))
+      .limit(10);
+    return scores;
+  }
+
+  async getQuizQuestions(topic: string, difficulty: string, count: number): Promise<any[]> {
+    const questions = await this.db.select().from(quizQuestions).where(
+      and(
+        eq(quizQuestions.topic, topic),
+        eq(quizQuestions.difficulty, difficulty)
+      )
+    );
+    return questions.sort(() => 0.5 - Math.random()).slice(0, count);
+  }
+
+  async submitQuizAttempt(data: any): Promise<any> {
+    const result = await this.db.insert(quizAttempts).values(data).returning();
+    return result[0];
+  }
+
+  async getQuizStats(userId: string): Promise<any> {
+    const attempts = await this.db.select().from(quizAttempts).where(eq(quizAttempts.userId, userId));
+    return {
+      totalAttempts: attempts.length,
+      avgScore: attempts.length ? Math.round(attempts.reduce((acc: any, curr: any) => acc + curr.score, 0) / attempts.length) : 0,
+      bestScore: attempts.length ? Math.max(...attempts.map((a: any) => a.score)) : 0,
+    };
+  }
+
+  async getDailyBrainTeaser(): Promise<any> {
+    // Select the brain teaser for today
+    const teaser = await this.db.select().from(brainTeasers).where(
+      sql`DATE(date) = CURRENT_DATE`
+    ).limit(1);
+    return teaser[0] || null;
+  }
+
+  async getTeaserAttempt(userId: string, teaserId: string): Promise<any> {
+    const result = await this.db.select().from(teaserAttempts).where(
+      and(eq(teaserAttempts.userId, userId), eq(teaserAttempts.teaserId, teaserId))
+    ).limit(1);
+    return result[0];
+  }
+
+  async submitTeaserAnswer(userId: string, teaserId: string, answer: string): Promise<any> {
+    const teaser = await this.db.select().from(brainTeasers).where(eq(brainTeasers.id, teaserId)).limit(1);
+    const teaserData = teaser[0];
+    if (!teaserData) throw new Error("Teaser not found");
+
+    const correct = answer.toLowerCase().trim() === teaserData.solution.toLowerCase().trim();
+    const existing = await this.getTeaserAttempt(userId, teaserId);
+
+    if (existing) {
+      const result = await this.db.update(teaserAttempts).set({
+        attempts: (existing.attempts || 0) + 1,
+        solved: existing.solved || correct,
+        userAnswer: answer,
+        solvedAt: (existing.solved || correct) && !existing.solvedAt ? new Date() : existing.solvedAt
+      }).where(eq(teaserAttempts.id, existing.id)).returning();
+      return { correct, attempt: result[0] };
+    } else {
+      const result = await this.db.insert(teaserAttempts).values({
+        userId,
+        teaserId,
+        solved: correct,
+        userAnswer: answer,
+        attempts: 1,
+        solvedAt: correct ? new Date() : null
+      }).returning();
+      return { correct, attempt: result[0] };
+    }
+  }
+
+  async recordHintUsed(userId: string, teaserId: string): Promise<void> {
+    const existing = await this.getTeaserAttempt(userId, teaserId);
+    if (existing) {
+      await this.db.update(teaserAttempts).set({
+        hintsUsed: (existing.hintsUsed || 0) + 1
+      }).where(eq(teaserAttempts.id, existing.id));
+    } else {
+      await this.db.insert(teaserAttempts).values({
+        userId,
+        teaserId,
+        hintsUsed: 1,
+        attempts: 0
+      });
+    }
+  }
+
+  async getTeaserCalendar(userId: string): Promise<any[]> {
+    const results = await this.db.select({
+      date: teaserAttempts.attemptedAt,
+      solved: teaserAttempts.solved
+    }).from(teaserAttempts).where(eq(teaserAttempts.userId, userId)).orderBy(desc(teaserAttempts.attemptedAt));
+    return results;
+  }
+
+  async getBrainTeaserStats(userId: string): Promise<any> {
+    const attempts = await this.db.select().from(teaserAttempts).where(eq(teaserAttempts.userId, userId));
+    return {
+      totalAttempts: attempts.length,
+      solved: attempts.filter((a: any) => a.solved).length,
+    };
   }
 }
 
