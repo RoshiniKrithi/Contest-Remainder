@@ -10,8 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import ContestTimer from "@/components/contests/contest-timer";
 import ProgressGraph from "@/components/progress/progress-graph";
+import DailyStreakCard from "@/components/dashboard/daily-streak-card";
 import ParticlesBackground from "@/components/layout/particles-background";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -339,21 +339,13 @@ export default function Dashboard() {
 
           {/* Sidebar */}
           <motion.div variants={itemVariants} className="space-y-8">
+            {/* Daily Streak */}
+            <DailyStreakCard />
+
             {/* Progress Graph */}
             <ProgressGraph className="border-white/5 bg-slate-900/40" />
 
             {/* Contest Timer */}
-            <AnimatePresence>
-              {liveContests.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                >
-                  <ContestTimer contest={liveContests[0]} />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         </div>
       </motion.div>
