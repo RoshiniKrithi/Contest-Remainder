@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import PageTransition from "@/components/layout/page-transition";
 
+import { triggerConfetti } from "@/lib/confetti";
+
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/stats"],
@@ -118,12 +120,24 @@ export default function Dashboard() {
       >
         {/* Particle Background */}
         <ParticlesBackground />
+
         {/* Header Section */}
-        <motion.div variants={itemVariants} className="mb-10">
-          <h1 className="text-4xl font-black text-white tracking-tight mb-2">
-            Coding <span className="text-gradient-primary">Arena</span>
-          </h1>
-          <p className="text-slate-400 font-medium">Welcome back, Commander. Here's your status report.</p>
+        <motion.div variants={itemVariants} className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-black text-white tracking-tight mb-2">
+              Coding <span className="text-gradient-primary">Arena</span>
+            </h1>
+            <p className="text-slate-400 font-medium">Welcome back, Commander. Here's your status report.</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => triggerConfetti.cannons()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black border-none shadow-[0_0_20px_rgba(79,70,229,0.4)] px-6"
+            >
+              <Zap className="h-4 w-4 mr-2" /> CELEBRATE MISSION
+            </Button>
+          </div>
         </motion.div>
 
         {/* Dashboard Stats */}
@@ -236,7 +250,10 @@ export default function Dashboard() {
                                   size="sm"
                                   variant="outline"
                                   className="h-8 border-white/10 hover:bg-white hover:text-slate-950 transition-all font-bold"
-                                  onClick={() => window.open(contest.url, '_blank')}
+                                  onClick={() => {
+                                    triggerConfetti.basic();
+                                    window.open(contest.url, '_blank');
+                                  }}
                                 >
                                   JOIN <ExternalLink className="h-3 w-3 ml-1.5" />
                                 </Button>
