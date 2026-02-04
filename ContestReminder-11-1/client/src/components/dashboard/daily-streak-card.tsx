@@ -17,6 +17,7 @@ interface DailyChallengeData {
 export default function DailyStreakCard() {
     const { data: daily, isLoading } = useQuery<DailyChallengeData>({
         queryKey: ["/api/daily-challenge"],
+        staleTime: 5 * 60 * 1000,
     });
 
     if (isLoading) {
@@ -40,8 +41,8 @@ export default function DailyStreakCard() {
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${daily.solvedToday
-                                        ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
-                                        : "bg-slate-700/50 text-slate-400 border border-white/5"
+                                    ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                    : "bg-slate-700/50 text-slate-400 border border-white/5"
                                     }`}>
                                     Daily Operation
                                 </span>
@@ -52,12 +53,12 @@ export default function DailyStreakCard() {
                         </div>
 
                         <div className={`relative flex items-center justify-center w-12 h-12 rounded-2xl border ${daily.solvedToday
-                                ? "bg-orange-500/10 border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                                : "bg-slate-800/50 border-white/5"
+                            ? "bg-orange-500/10 border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                            : "bg-slate-800/50 border-white/5"
                             }`}>
                             <Flame className={`h-6 w-6 transition-all duration-700 ${daily.solvedToday
-                                    ? "text-orange-500 fill-orange-500 animate-pulse drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]"
-                                    : "text-slate-600"
+                                ? "text-orange-500 fill-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]"
+                                : "text-slate-600"
                                 }`} />
                         </div>
                     </div>
