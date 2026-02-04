@@ -695,10 +695,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Typing Challenge Routes
   app.get("/api/challenges/typing/snippets", async (req, res) => {
     try {
-      const { difficulty = "easy", language = "javascript" } = req.query;
+      const { difficulty = "easy", language = "javascript", r } = req.query;
       const snippet = await storage.getRandomTypingChallenge(
         difficulty as string,
-        language as string
+        language as string,
+        r ? parseInt(r as string) : undefined
       );
       if (!snippet) {
         return res.status(404).json({ error: "No snippets found" });
@@ -741,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quiz Challenge Routes
   app.get("/api/challenges/quiz/questions", async (req, res) => {
     try {
-      const { topic = "arrays", difficulty = "medium", count = "10" } = req.query;
+      const { topic = "arrays", difficulty = "medium", count = "2" } = req.query;
       const questions = await storage.getQuizQuestions(
         topic as string,
         difficulty as string,
@@ -769,6 +770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topic,
         timeSpent,
       });
+      console.log(`✅ Quiz submitted by user ${req.user.username}: Score ${score}/${totalQuestions}`);
       res.status(201).json(attempt);
     } catch (error) {
       res.status(400).json({ error: "Failed to submit quiz attempt" });
@@ -822,6 +824,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { teaserId, answer } = req.body;
       const result = await storage.submitTeaserAnswer(req.user.id, teaserId, answer);
+
+      // Update streak if correct
+      if (result.correct) {
+        const user = await storage.getUser(req.user.id);
+        if (user) {
+          const lastSolve = user.lastDailySolve ? new Date(user.lastDailySolve) : null;
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+          const lastSolveDate = lastSolve ? new Date(lastSolve.getFullYear(), lastSolve.getMonth(), lastSolve.getDate()).getTime() : 0;
+
+          if (lastSolveDate < today) {
+            const yesterday = today - 86400000;
+            let newStreak = 1;
+
+            if (lastSolveDate === yesterday) {
+              newStreak = (user.streak || 0) + 1;
+            }
+
+            await storage.updateUserStreak(user.id, newStreak);
+            console.log(`🔥 Streak updated for user ${user.username}: ${newStreak} days`);
+          }
+        }
+      }
+
       res.json(result);
     } catch (error) {
       res.status(400).json({ error: "Failed to submit answer" });
@@ -852,64 +878,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(calendar);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar" });
-    }
-  });
-
-  // Marathon Routes
-  app.get("/api/challenges/marathon/active", async (req, res) => {
-    try {
-      const marathon = await storage.getActiveMarathon();
-      res.json(marathon);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch active marathon" });
-    }
-  });
-
-  app.get("/api/challenges/marathon/upcoming", async (req, res) => {
-    try {
-      const marathons = await storage.getUpcomingMarathons();
-      res.json(marathons);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch upcoming marathons" });
-    }
-  });
-
-  app.post("/api/challenges/marathon/register", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    try {
-      const { marathonId } = req.body;
-      const participant = await storage.registerForMarathon(req.user.id, marathonId);
-      res.status(201).json(participant);
-    } catch (error) {
-      res.status(400).json({ error: "Failed to register for marathon" });
-    }
-  });
-
-  app.get("/api/challenges/marathon/leaderboard/:marathonId", async (req, res) => {
-    try {
-      const leaderboard = await storage.getMarathonLeaderboard(req.params.marathonId);
-      res.json(leaderboard);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch leaderboard" });
-    }
-  });
-
-  app.get("/api/challenges/marathon/participation/:marathonId", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    try {
-      const participation = await storage.getMarathonParticipation(
-        req.user.id,
-        req.params.marathonId
-      );
-      res.json(participation || { registered: false, problemsSolved: 0, totalScore: 0 });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch participation" });
     }
   });
 
