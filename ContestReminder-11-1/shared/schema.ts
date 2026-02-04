@@ -242,30 +242,6 @@ export const teaserAttempts = pgTable("teaser_attempts", {
   attemptedAt: timestamp("attempted_at").default(sql`now()`),
 });
 
-// Challenges - Weekly Marathon Tables
-export const marathons = pgTable("marathons", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time").notNull(),
-  problemIds: jsonb("problem_ids").notNull(), // Array of problem IDs
-  status: text("status").notNull().default("upcoming"), // upcoming, live, completed
-  difficulty: text("difficulty").notNull(), // easy, medium, hard, mixed
-  participantCount: integer("participant_count").default(0),
-  createdAt: timestamp("created_at").default(sql`now()`),
-});
-
-export const marathonParticipants = pgTable("marathon_participants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  marathonId: varchar("marathon_id").notNull(),
-  userId: varchar("user_id").notNull(),
-  problemsSolved: integer("problems_solved").default(0),
-  totalScore: integer("total_score").default(0),
-  rank: integer("rank").default(0),
-  lastSubmissionAt: timestamp("last_submission_at"),
-  registeredAt: timestamp("registered_at").default(sql`now()`),
-});
 
 // Insert schemas for challenges
 export const insertTypingChallengeSchema = createInsertSchema(typingChallenges).omit({ id: true, createdAt: true });
@@ -274,8 +250,6 @@ export const insertQuizQuestionSchema = createInsertSchema(quizQuestions).omit({
 export const insertQuizAttemptSchema = createInsertSchema(quizAttempts).omit({ id: true, completedAt: true });
 export const insertBrainTeaserSchema = createInsertSchema(brainTeasers).omit({ id: true, createdAt: true });
 export const insertTeaserAttemptSchema = createInsertSchema(teaserAttempts).omit({ id: true, attemptedAt: true });
-export const insertMarathonSchema = createInsertSchema(marathons).omit({ id: true, createdAt: true, participantCount: true });
-export const insertMarathonParticipantSchema = createInsertSchema(marathonParticipants).omit({ id: true, registeredAt: true, rank: true });
 
 // Types for challenges
 export type TypingChallenge = typeof typingChallenges.$inferSelect;
@@ -296,8 +270,3 @@ export type InsertBrainTeaser = z.infer<typeof insertBrainTeaserSchema>;
 export type TeaserAttempt = typeof teaserAttempts.$inferSelect;
 export type InsertTeaserAttempt = z.infer<typeof insertTeaserAttemptSchema>;
 
-export type Marathon = typeof marathons.$inferSelect;
-export type InsertMarathon = z.infer<typeof insertMarathonSchema>;
-
-export type MarathonParticipant = typeof marathonParticipants.$inferSelect;
-export type InsertMarathonParticipant = z.infer<typeof insertMarathonParticipantSchema>;
