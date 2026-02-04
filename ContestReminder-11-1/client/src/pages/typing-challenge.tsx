@@ -28,6 +28,7 @@ interface LeaderboardEntry {
 export default function TypingChallengePage() {
     const [difficulty, setDifficulty] = useState("easy");
     const [language, setLanguage] = useState("javascript");
+    const [refreshKey, setRefreshKey] = useState(0);
     const [input, setInput] = useState("");
     const [startTime, setStartTime] = useState<number | null>(null);
     const [isFinished, setIsFinished] = useState(false);
@@ -38,7 +39,7 @@ export default function TypingChallengePage() {
     const queryClient = useQueryClient();
 
     const { data: challenge, refetch } = useQuery<TypingChallenge>({
-        queryKey: ["/api/challenges/typing/snippets", { difficulty, language }],
+        queryKey: ["/api/challenges/typing/snippets", { difficulty, language, r: refreshKey }],
     });
 
     const { data: leaderboard } = useQuery<LeaderboardEntry[]>({
@@ -127,7 +128,7 @@ export default function TypingChallengePage() {
         setIsFinished(false);
         setWPM(0);
         setAccuracy(100);
-        refetch();
+        setRefreshKey(prev => prev + 1);
     };
 
     const handleChange = async (type: "difficulty" | "language", value: string) => {
