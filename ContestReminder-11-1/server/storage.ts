@@ -31,9 +31,7 @@ import {
   quizQuestions,
   quizAttempts,
   brainTeasers,
-  teaserAttempts,
-  marathons,
-  marathonParticipants
+  teaserAttempts
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
@@ -103,7 +101,7 @@ export interface IStorage {
 
   // Challenge operations
   getChallengeStats(userId: string): Promise<any>;
-  getRandomTypingChallenge(difficulty: string, language: string): Promise<any>;
+  getRandomTypingChallenge(difficulty: string, language: string, seed?: number): Promise<any>;
   submitTypingScore(data: any): Promise<any>;
   getTypingLeaderboard(): Promise<any[]>;
   getQuizQuestions(topic: string, difficulty: string, count: number): Promise<any[]>;
@@ -115,6 +113,7 @@ export interface IStorage {
   recordHintUsed(userId: string, teaserId: string): Promise<void>;
   getTeaserCalendar(userId: string): Promise<any[]>;
   getBrainTeaserStats(userId: string): Promise<any>;
+
 }
 
 export class MemStorage implements IStorage {
@@ -183,7 +182,7 @@ export class MemStorage implements IStorage {
     this.contests.set(contestId, contest);
 
     // Create sample problems
-    const problems = [
+    const sampleProblems = [
       {
         title: "Two Sum",
         description: "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.\n\nYou may assume that each input would have exactly one solution, and you may not use the same element twice.\n\nYou can return the answer in any order.",
@@ -206,10 +205,103 @@ export class MemStorage implements IStorage {
         testCases: [
           { input: '["h","e","l","l","o"]', output: '["o","l","l","e","h"]' }
         ]
+      },
+      {
+        title: "Valid Anagram",
+        description: "Given two strings s and t, return true if t is an anagram of s, and false otherwise.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: 's = "anagram", t = "nagaram"', output: "true" },
+          { input: 's = "rat", t = "car"', output: "false" }
+        ]
+      },
+      {
+        title: "Binary Search",
+        description: "Given an array of integers nums which is sorted in ascending order, and an integer target, write a function to search target in nums. If target exists, then return its index. Otherwise, return -1.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "nums = [-1,0,3,5,9,12], target = 9", output: "4" },
+          { input: "nums = [-1,0,3,5,9,12], target = 2", output: "-1" }
+        ]
+      },
+      {
+        title: "Contains Duplicate",
+        description: "Given an integer array nums, return true if any value appears at least twice in the array, and return false if every element is distinct.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "[1,2,3,1]", output: "true" },
+          { input: "[1,2,3,4]", output: "false" }
+        ]
+      },
+      {
+        title: "Linked List Cycle",
+        description: "Given head, the head of a linked list, determine if the linked list has a cycle in it.",
+        difficulty: "medium",
+        points: 150,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "head = [3,2,0,-4], pos = 1", output: "true" },
+          { input: "head = [1,2], pos = -1", output: "false" }
+        ]
+      },
+      {
+        title: "Merge Two Sorted Lists",
+        description: "Merge two sorted linked lists and return it as a sorted list. The list should be made by splicing together the nodes of the first two lists.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "l1 = [1,2,4], l2 = [1,3,4]", output: "[1,1,2,3,4,4]" }
+        ]
+      },
+      {
+        title: "Climbing Stairs",
+        description: "You are climbing a staircase. It takes n steps to reach the top. Each time you can either climb 1 or 2 steps. In how many distinct ways can you climb to the top?",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "n = 2", output: "2" },
+          { input: "n = 3", output: "3" }
+        ]
+      },
+      {
+        title: "Maximum Subarray",
+        description: "Given an integer array nums, find the contiguous subarray (containing at least one number) which has the largest sum and return its sum.",
+        difficulty: "medium",
+        points: 200,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "[-2,1,-3,4,-1,2,1,-5,4]", output: "6" }
+        ]
+      },
+      {
+        title: "Lowest Common Ancestor of a BST",
+        description: "Given a binary search tree (BST), find the lowest common ancestor (LCA) node of two given nodes in the BST.",
+        difficulty: "easy",
+        points: 100,
+        timeLimit: 1000,
+        memoryLimit: 128,
+        testCases: [
+          { input: "root = [6,2,8,0,4,7,9,3,5], p = 2, q = 8", output: "6" }
+        ]
       }
     ];
 
-    for (const p of problems) {
+    for (const p of sampleProblems) {
       const pId = randomUUID();
       this.problems.set(pId, {
         id: pId,
@@ -629,29 +721,40 @@ export class MemStorage implements IStorage {
     const typing = Array.from(this.typingScores.values()).filter(s => s.userId === userId);
     const quizzes = Array.from(this.quizAttempts.values()).filter(a => a.userId === userId);
     const teasers = Array.from(this.brainTeaserSolutions.values()).filter(s => s.userId === userId && s.solved);
+    const user = this.users.get(userId);
+
+    const totalWeight = quizzes.reduce((acc, curr) => acc + (curr.totalQuestions || 1), 0);
+    const totalScore = quizzes.reduce((acc, curr) => acc + (curr.score || 0), 0);
+    const avgScore = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
 
     return {
       typing: {
         completed: typing.length,
-        avgWpm: typing.length ? Math.round(typing.reduce((acc, curr) => acc + curr.wpm, 0) / typing.length) : 0,
-        bestWpm: typing.length ? Math.max(...typing.map(t => t.wpm)) : 0,
+        bestWPM: typing.length ? Math.max(...typing.map(t => t.wpm)) : 0,
       },
-      quizzes: {
+      quiz: {
         completed: quizzes.length,
-        avgScore: quizzes.length ? Math.round(quizzes.reduce((acc, curr) => acc + curr.score, 0) / quizzes.length) : 0,
+        averageScore: avgScore,
       },
-      brainTeasers: {
-        solved: teasers.length,
+      brainTeaser: {
+        streak: user?.streak || 0,
+        totalSolved: teasers.length,
       }
     };
   }
 
-  async getRandomTypingChallenge(difficulty: string, language: string): Promise<any> {
+  async getRandomTypingChallenge(difficulty: string, language: string, seed?: number): Promise<any> {
     const filtered = Array.from(this.typingChallenges.values()).filter(
       c => c.difficulty === difficulty && c.language === language
     );
     if (!filtered.length) return null;
-    return filtered[Math.floor(Math.random() * filtered.length)];
+
+    // Use seed for deterministic selection if provided, otherwise random
+    const index = seed !== undefined
+      ? seed % filtered.length
+      : Math.floor(Math.random() * filtered.length);
+
+    return filtered[index];
   }
 
   async submitTypingScore(data: any): Promise<any> {
@@ -672,9 +775,18 @@ export class MemStorage implements IStorage {
   }
 
   async getQuizQuestions(topic: string, difficulty: string, count: number): Promise<any[]> {
-    const filtered = Array.from(this.quizQuestions.values()).filter(
+    let filtered = Array.from(this.quizQuestions.values()).filter(
       q => q.topic === topic && q.difficulty === difficulty
     );
+
+    // If not enough questions of selected difficulty, add questions of other difficulties for the same topic
+    if (filtered.length < count) {
+      const others = Array.from(this.quizQuestions.values()).filter(
+        q => q.topic === topic && q.difficulty !== difficulty
+      );
+      filtered = [...filtered, ...others];
+    }
+
     return filtered.sort(() => 0.5 - Math.random()).slice(0, count);
   }
 
@@ -950,6 +1062,11 @@ export class MemStorage implements IStorage {
                 question: "What is the time complexity to insert an element at the beginning of an array?",
                 options: ["O(1)", "O(log n)", "O(n)", "O(n^2)"],
                 correctAnswerIndex: 2
+              },
+              {
+                question: "Which data structure is best for LIFO (Last-In-First-Out) operations?",
+                options: ["Queue", "Stack", "Linked List", "Hash Table"],
+                correctAnswerIndex: 1
               }
             ]
           },
@@ -963,7 +1080,18 @@ export class MemStorage implements IStorage {
             videoUrl: "https://www.youtube.com/embed/Zv7vS_3K4h8",
             type: "video",
             isActive: true,
-            quizData: []
+            quizData: [
+              {
+                question: "What is the main advantage of an array over a linked list?",
+                options: ["Constant time access by index", "Infinite dynamic scaling", "Efficient insertion at the beginning", "Zero memory overhead"],
+                correctAnswerIndex: 0
+              },
+              {
+                question: "Which operation is O(1) in a static array?",
+                options: ["Searching for a value", "Deleting an element", "Inserting at index 0", "Accessing a specific index"],
+                correctAnswerIndex: 3
+              }
+            ]
           },
           {
             courseId,
@@ -975,7 +1103,13 @@ export class MemStorage implements IStorage {
             videoUrl: "https://www.youtube.com/embed/Hj_rUuM8Y_0",
             type: "video",
             isActive: true,
-            quizData: []
+            quizData: [
+              {
+                question: "In a singly linked list, what does each node store besides the data?",
+                options: ["The index of the node", "A pointer to the next node", "The size of the list", "A pointer to the previous node"],
+                correctAnswerIndex: 1
+              }
+            ]
           },
           {
             courseId,
@@ -987,7 +1121,36 @@ export class MemStorage implements IStorage {
             videoUrl: "https://www.youtube.com/embed/A3ZNCqZ0NoM",
             type: "video",
             isActive: true,
-            quizData: []
+            quizData: [
+              {
+                question: "Which principle determines the behavior of a Stack?",
+                options: ["FIFO (First-In-First-Out)", "LIFO (Last-In-First-Out)", "Priority-based", "Random Access"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Data Structures Mastery",
+            description: "Final evaluation of your data structure knowledge.",
+            content: "Prove your knowledge of arrays, lists, stacks, and queues. This assessment will test your ability to choose the right tool for the tactical situation.",
+            order: 5,
+            duration: 15,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which data structure provides the fastest access to an element if you know its position?",
+                options: ["Stack", "Queue", "Array", "Linked List"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "In what situation would a Linked List be preferred over an Array?",
+                options: ["Frequent random access", "When memory is tight and fixed", "High frequency of insertions/deletions at the beginning", "When sorting is the primary goal"],
+                correctAnswerIndex: 2
+              }
+            ]
           }
         ];
       }
@@ -1015,9 +1178,140 @@ export class MemStorage implements IStorage {
                 correctAnswerIndex: 2
               }
             ]
+          },
+          {
+            courseId,
+            title: "Mission: Search & Conquer",
+            description: "Master efficient searching algorithms.",
+            content: "Finding data quickly is a core skill. We'll explore Binary Search and how it drastically improves lookup performance compared to linear search.",
+            order: 2,
+            duration: 25,
+            videoUrl: "https://www.youtube.com/embed/P3YID7liBug",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the time complexity of Binary Search on a sorted array?",
+                options: ["O(1)", "O(n)", "O(log n)", "O(n log n)"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Algorithmic Efficiency",
+            description: "Final evaluation of algorithm and complexity knowledge.",
+            content: "Synthesize your understanding of Big O, sorting, and searching. Accuracy under pressure is key to algorithmic mastery.",
+            order: 3,
+            duration: 20,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Compare O(n) and O(log n). Which grows faster as n becomes very large?",
+                options: ["O(log n)", "O(n)", "They grow at the same rate", "It depends on the constant factors"],
+                correctAnswerIndex: 1
+              }
+            ]
           }
         ];
-      } else if (course.title.includes("Competitive Programming Mastery")) {
+      }
+      else if (course.title.includes("Advanced Problem Solving")) {
+        lessons = [
+          {
+            courseId,
+            title: "Course Briefing: Advanced Tactics",
+            description: "Introduction to high-level competitive programming.",
+            content: "Welcome to Sector 7. This course covers the advanced mathematics and algorithms required for elite-level programming contests. Today, we begin with the tactical landscape of Graph Theory.",
+            order: 1,
+            duration: 15,
+            videoUrl: "https://www.youtube.com/embed/8hly31xKli0",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the primary focus of this advanced module?",
+                options: ["Basic Syntax", "Advanced Algorithms & Optimization", "Web Development", "Database Management"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Advanced Tactics: Graph Theory",
+            description: "Master complex graph algorithms and structures.",
+            content: "Graphs are everywhere. In this module, we dive into Dijkstra, Bellman-Ford, and Minimum Spanning Trees to solve the most difficult navigational problems.",
+            order: 2,
+            duration: 45,
+            videoUrl: "https://www.youtube.com/embed/zMtI_n27dTM",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which algorithm is best for finding the shortest path in a graph WITH negative edge weights?",
+                options: ["BFS", "Dijkstra", "Bellman-Ford", "Floyd-Warshall"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Mathematical Warfare: Number Theory",
+            description: "Harness the power of primes and modular arithmetic.",
+            content: "Primes, GCD, and modular inverses are the building blocks of cryptography and complex logic puzzles.",
+            order: 3,
+            duration: 40,
+            videoUrl: "https://www.youtube.com/embed/U_h7pbeTntk",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the complexity of the Euclidean algorithm for GCD?",
+                options: ["O(n)", "O(log n)", "O(1)", "O(n^2)"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Tactical Strings: Suffix Structures",
+            description: "Optimize operations on large-scale text data.",
+            content: "Pattern matching at scale requires advanced structures like Suffix Arrays and Automata.",
+            order: 4,
+            duration: 35,
+            videoUrl: "https://www.youtube.com/embed/V59ax7InSio",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which structure is most efficient for multiple pattern matching in a single text?",
+                options: ["Aho-Corasick", "Binary Search Tree", "Linked List", "Stack"],
+                correctAnswerIndex: 0
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Advanced Tactics",
+            description: "Final evaluation of your advanced problem-solving capabilities.",
+            content: "The extraction protocol is active. Prove your mastery of graphs, numbers, and strings.",
+            order: 5,
+            duration: 30,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the primary goal of competitive programming optimization?",
+                options: ["Code length", "Time and space complexity", "Variable naming", "Comments"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        ];
+      }
+      else if (course.title.includes("Competitive Programming Mastery")) {
         lessons = [
           {
             courseId,
@@ -1033,6 +1327,42 @@ export class MemStorage implements IStorage {
               {
                 question: "What does STL stand for in C++?",
                 options: ["Standard Transmission Language", "Simple Teaching Level", "Standard Template Library", "Single Threaded Link"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Advanced Combat: Dynamic Programming",
+            description: "Master the art of solving subproblems.",
+            content: "Optimization is often about recognizing overlapping subproblems. We'll explore the core patterns of DP to tackle high-level contest challenges.",
+            order: 2,
+            duration: 40,
+            videoUrl: "https://www.youtube.com/embed/oBt53YbR9Kk",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the key characteristic of problems that can be solved with DP?",
+                options: ["They must be linear", "They have overlapping subproblems", "They require sorting first", "They must use Recursion ONLY"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Grandmaster Trial",
+            description: "Final evaluation for top-tier competitive programmers.",
+            content: "Your final mission. Combine STL mastery with DP optimization to solve these elite-level logic puzzles.",
+            order: 3,
+            duration: 30,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which data structure is typically used to implement a priority queue in the STL?",
+                options: ["Vector", "List", "Heap", "Stack"],
                 correctAnswerIndex: 2
               }
             ]
@@ -1057,9 +1387,46 @@ export class MemStorage implements IStorage {
                 correctAnswerIndex: 2
               }
             ]
+          },
+          {
+            courseId,
+            title: "System Design: Database Sharding",
+            description: "Learn how to partition large datasets.",
+            content: "When a single database can't handle the load, we must shard. We'll explore horizontal partitioning and how it affects system complexity.",
+            order: 2,
+            duration: 35,
+            videoUrl: "https://www.youtube.com/embed/u6O62Wv-mD8",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is 'Horizontal Partitioning' also known as?",
+                options: ["Replication", "Sharding", "Normalization", "Indexing"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: System Architecture",
+            description: "Evaluate your system design capabilities.",
+            content: "Design for scale, reliability, and performance. This assessment checks your understanding of high-availability architectures.",
+            order: 3,
+            duration: 25,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the primary reason to use Database Sharding?",
+                options: ["To backup data", "To improve security", "To distribute data and load across multiple servers", "To normalize the schema"],
+                correctAnswerIndex: 2
+              }
+            ]
           }
         ];
-      } else {
+      }
+      else {
         lessons = [
           {
             courseId,
@@ -1068,7 +1435,7 @@ export class MemStorage implements IStorage {
             content: "Standard operational procedure for this tactical module. Review the briefing carefully before proceeding to the extraction protocol.",
             order: 1,
             duration: 10,
-            videoUrl: "https://www.youtube.com/embed/u6O62Wv-mD8",
+            videoUrl: "https://www.youtube.com/embed/vLnPwxZdW4Y",
             type: "video",
             isActive: true,
             quizData: [
@@ -1095,6 +1462,7 @@ export class MemStorage implements IStorage {
       });
     });
   }
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1129,7 +1497,19 @@ export class DatabaseStorage implements IStorage {
           updates: {
             videoUrl: "https://www.youtube.com/embed/8hly31xKli0",
             type: "video",
-            content: "Data structures are the backbone of efficient software. We'll start with an overview of how computers store information and the basic categories of data organization."
+            content: "Data structures are the backbone of efficient software. We'll start with an overview of how computers store information and the basic categories of data organization.",
+            quizData: [
+              {
+                question: "What is the time complexity to insert an element at the beginning of an array?",
+                options: ["O(1)", "O(log n)", "O(n)", "O(n^2)"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "Which data structure is best for LIFO (Last-In-First-Out) operations?",
+                options: ["Queue", "Stack", "Linked List", "Hash Table"],
+                correctAnswerIndex: 1
+              }
+            ]
           }
         },
         {
@@ -1137,7 +1517,19 @@ export class DatabaseStorage implements IStorage {
           updates: {
             videoUrl: "https://www.youtube.com/embed/Zv7vS_3K4h8",
             type: "video",
-            content: "Arrays are the most fundamental data structure. We explore how they are indexed and how dynamic arrays (like vectors) handle resizing."
+            content: "Arrays are the most fundamental data structure. We explore how they are indexed and how dynamic arrays (like vectors) handle resizing.",
+            quizData: [
+              {
+                question: "What is the main advantage of an array over a linked list?",
+                options: ["Constant time access by index", "Infinite dynamic scaling", "Efficient insertion at the beginning", "Zero memory overhead"],
+                correctAnswerIndex: 0
+              },
+              {
+                question: "Which operation is O(1) in a static array?",
+                options: ["Searching for a value", "Deleting an element", "Inserting at index 0", "Accessing a specific index"],
+                correctAnswerIndex: 3
+              }
+            ]
           }
         },
         {
@@ -1145,7 +1537,14 @@ export class DatabaseStorage implements IStorage {
           updates: {
             videoUrl: "https://www.youtube.com/embed/Hj_rUuM8Y_0",
             type: "video",
-            content: "Linked lists offer flexible memory management. We'll compare them to arrays and understand pointers."
+            content: "Linked lists offer flexible memory management. We'll compare them to arrays and understand pointers.",
+            quizData: [
+              {
+                question: "In a singly linked list, what does each node store besides the data?",
+                options: ["The index of the node", "A pointer to the next node", "The size of the list", "A pointer to the previous node"],
+                correctAnswerIndex: 1
+              }
+            ]
           }
         },
         {
@@ -1153,25 +1552,289 @@ export class DatabaseStorage implements IStorage {
           updates: {
             videoUrl: "https://www.youtube.com/embed/A3ZNCqZ0NoM",
             type: "video",
-            content: "Master the stack (Last-In-First-Out) and queue (First-In-First-Out) protocols."
+            content: "Master the stack (Last-In-First-Out) and queue (First-In-First-Out) protocols.",
+            quizData: [
+              {
+                question: "Which principle determines the behavior of a Stack?",
+                options: ["FIFO (First-In-First-Out)", "LIFO (Last-In-First-Out)", "Priority-based", "Random Access"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "Advanced Problem Solving",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/zMtI_n27dTM",
+            duration: 15,
+            content: "Advanced Graph Theory is the core of sophisticated problem solving. This briefing introduces the advanced tactical landscape of this course."
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "Programming Fundamentals",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/vLnPwxZdW4Y",
+            duration: 15,
+            content: "Welcome to the mission. This briefing covers the fundamental objectives and technical landscape we will be operating in. Watch the tactical overview to prepare for the challenges ahead."
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "Data Structures Essentials",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/Zv7vS_3K4h8",
+            duration: 15,
+            content: "Data structures are the backbone of efficient software. This briefing outlines the critical organization methods we'll master."
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "Algorithms Design & Analysis",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/RBSGKlAvoiM",
+            duration: 15,
+            content: "Speed is the ultimate advantage. This briefing introduces Big O notation and the strategic importance of algorithm analysis."
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "Competitive Programming Mastery",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/8hly31xKli0",
+            duration: 15,
+            content: "Elite training for the world stage. This briefing prepares you for the high-intensity world of competitive programming contests."
+          }
+        },
+        {
+          title: "Course Briefing",
+          courseTitle: "System Design",
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/m8Icp_Cid5o",
+            duration: 15,
+            content: "Architecture at scale. This briefing introduces the principles of designing high-availability, distributed systems."
+          }
+        },
+        {
+          title: "Advanced Tactics: Graph Theory",
+          isCritical: true,
+          courseTitle: "Advanced Problem Solving",
+          order: 2,
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/zMtI_n27dTM",
+            description: "Master complex graph algorithms and structures.",
+            content: "Graphs are everywhere. In this module, we dive into Dijkstra, Bellman-Ford, and Minimum Spanning Trees to solve the most difficult navigational problems.",
+            duration: 45,
+            quizData: [
+              {
+                question: "Which algorithm is best for finding the shortest path in a graph WITH negative edge weights?",
+                options: ["BFS", "Dijkstra", "Bellman-Ford", "Floyd-Warshall"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        },
+        {
+          title: "Mathematical Warfare: Number Theory",
+          isCritical: true,
+          courseTitle: "Advanced Problem Solving",
+          order: 3,
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/U_h7pbeTntk",
+            duration: 40,
+            content: "Primes, GCD, and modular inverses are the building blocks of cryptography and complex logic puzzles.",
+            quizData: [
+              {
+                question: "What is the complexity of the Euclidean algorithm for GCD?",
+                options: ["O(n)", "O(log n)", "O(1)", "O(n^2)"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        },
+        {
+          title: "Tactical Strings: Suffix Structures",
+          isCritical: true,
+          courseTitle: "Advanced Problem Solving",
+          order: 4,
+          updates: {
+            videoUrl: "https://www.youtube.com/embed/V59ax7InSio",
+            duration: 35,
+            content: "Pattern matching at scale requires advanced structures like Suffix Arrays and Automata.",
+            quizData: [
+              {
+                question: "Which structure is most efficient for multiple pattern matching in a single text?",
+                options: ["Aho-Corasick", "Binary Search Tree", "Linked List", "Stack"],
+                correctAnswerIndex: 0
+              }
+            ]
           }
         },
         {
           title: "The Briefing: C++ Foundations",
+          courseTitle: "Programming Fundamentals",
           updates: {
             videoUrl: "https://www.youtube.com/embed/vLnPwxZdW4Y",
-            type: "video"
+            type: "video",
+            quizData: [
+              {
+                question: "What is the correct syntax to output 'Hello World' in C++?",
+                options: ["system.out.println(\"Hello World\");", "console.log(\"Hello World\");", "cout << \"Hello World\";", "print(\"Hello World\");"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "Which directive is used to include the input-output stream library?",
+                options: ["#include <iostream>", "#import <stream>", "using namespace std;", "void main()"],
+                correctAnswerIndex: 0
+              }
+            ]
+          }
+        },
+        {
+          title: "Mission: Data Types & Variables",
+          isCritical: true,
+          courseTitle: "Programming Fundamentals",
+          order: 2,
+          updates: {
+            type: "theory",
+            quizData: [
+              {
+                question: "Which data type is specifically used to store text sequences?",
+                options: ["int", "char", "string", "double"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "What is the result of '5 / 2' in integer division in C++?",
+                options: ["2.5", "2", "3", "Error"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        },
+        {
+          title: "Assessment: Data Structures Mastery",
+          isCritical: true,
+          courseTitle: "Data Structures Essentials",
+          order: 5,
+          updates: {
+            quizData: [
+              {
+                question: "Which data structure provides the fastest access to an element if you know its position?",
+                options: ["Stack", "Queue", "Array", "Linked List"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "In what situation would a Linked List be preferred over an Array?",
+                options: ["Frequent random access", "When memory is tight and fixed", "High frequency of insertions/deletions at the beginning", "When sorting is the primary goal"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        },
+        {
+          title: "Assessment: Algorithmic Efficiency",
+          isCritical: true,
+          courseTitle: "Algorithms Design & Analysis",
+          order: 3,
+          updates: {
+            quizData: [
+              {
+                question: "Compare O(n) and O(log n). Which grows faster as n becomes very large?",
+                options: ["O(log n)", "O(n)", "They grow at the same rate", "It depends on the constant factors"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        },
+        {
+          title: "Assessment: Advanced Tactics",
+          isCritical: true,
+          courseTitle: "Advanced Problem Solving",
+          order: 5,
+          updates: {
+            description: "Final evaluation of your advanced problem-solving capabilities.",
+            content: "The extraction protocol is active. Prove your mastery of graphs, numbers, and strings.",
+            quizData: [
+              {
+                question: "What is the primary constraint for using Dijkstra's algorithm?",
+                options: ["Graph must be acyclic", "Edges must have non-negative weights", "Must be a complete graph", "Max 100 nodes"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        },
+        {
+          title: "Assessment: Grandmaster Trial",
+          isCritical: true,
+          courseTitle: "Competitive Programming Mastery",
+          order: 3,
+          updates: {
+            quizData: [
+              {
+                question: "Which data structure is typically used to implement a priority queue in the STL?",
+                options: ["Vector", "List", "Heap", "Stack"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        },
+        {
+          title: "Assessment: System Architecture",
+          isCritical: true,
+          courseTitle: "System Design",
+          order: 3,
+          updates: {
+            quizData: [
+              {
+                question: "What is the primary reason to use Database Sharding?",
+                options: ["To backup data", "To improve security", "To distribute data and load across multiple servers", "To normalize the schema"],
+                correctAnswerIndex: 2
+              }
+            ]
           }
         }
       ];
 
+      const allCourses = await this.db.select().from(courses);
+
       for (const patch of patches) {
-        const matchingLesson = existingLessons.find((l: any) => l.title === patch.title);
+        let matchingLesson;
+        if (patch.courseTitle) {
+          const course = allCourses.find((c: any) => c.title.toLowerCase().includes(patch.courseTitle.toLowerCase()));
+          if (course) {
+            matchingLesson = existingLessons.find((l: any) =>
+              l.title.trim() === patch.title.trim() &&
+              l.courseId === course.id
+            );
+          }
+        } else {
+          matchingLesson = existingLessons.find((l: any) => l.title.trim() === patch.title.trim());
+        }
+
         if (matchingLesson) {
           console.log(`📡 Intelligence Sync: Updating mission -> ${patch.title}`);
           await this.db.update(lessons)
             .set(patch.updates)
             .where(eq(lessons.id, matchingLesson.id));
+        } else if (patch.isCritical) {
+          console.log(`📡 Intelligence Sync: Deploying critical mission -> ${patch.title}`);
+          const course = allCourses.find((c: any) => c.title.includes(patch.courseTitle || ""));
+
+          if (course) {
+            await this.db.insert(lessons).values({
+              courseId: course.id,
+              title: patch.title,
+              description: (patch.updates as any).description || "Module Assessment",
+              content: (patch.updates as any).content || "Quiz content",
+              order: patch.order || 5,
+              duration: (patch.updates as any).duration || 15,
+              videoUrl: (patch.updates as any).videoUrl || null,
+              type: (patch.updates as any).type || "video",
+              quizData: patch.updates.quizData,
+              isActive: true
+            });
+          }
         } else {
           console.log(`📡 Intelligence Sync: Mission not found -> ${patch.title}`);
         }
@@ -1567,19 +2230,25 @@ export class DatabaseStorage implements IStorage {
     const teaserSolves = await this.db.select().from(teaserAttempts).where(
       and(eq(teaserAttempts.userId, userId), eq(teaserAttempts.solved, true))
     );
+    const userData = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const user = userData[0];
+
+    const totalWeight = attempts.reduce((acc: any, curr: any) => acc + (curr.totalQuestions || 1), 0);
+    const totalScore = attempts.reduce((acc: any, curr: any) => acc + (curr.score || 0), 0);
+    const avgScore = totalWeight > 0 ? Math.round((totalScore / totalWeight) * 100) : 0;
 
     return {
       typing: {
         completed: scores.length,
-        avgWpm: scores.length ? Math.round(scores.reduce((acc: any, curr: any) => acc + curr.wpm, 0) / scores.length) : 0,
-        bestWpm: scores.length ? Math.max(...scores.map((s: any) => s.wpm)) : 0,
+        bestWPM: scores.length ? Math.max(...scores.map((s: any) => s.wpm)) : 0,
       },
-      quizzes: {
+      quiz: {
         completed: attempts.length,
-        avgScore: attempts.length ? Math.round(attempts.reduce((acc: any, curr: any) => acc + curr.score, 0) / attempts.length) : 0,
+        averageScore: avgScore,
       },
-      brainTeasers: {
-        solved: teaserSolves.length,
+      brainTeaser: {
+        streak: user?.streak || 0,
+        totalSolved: teaserSolves.length,
       }
     };
   }
