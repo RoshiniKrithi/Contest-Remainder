@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 const LoadingScreen = ({ onLoadingComplete }: { onLoadingComplete: () => void }) => {
     const [isVisible, setIsVisible] = useState(true);
-    const text = "CODE ADRENA";
+    const text = "CODE ARENA";
     const letters = text.split("");
 
     useEffect(() => {
