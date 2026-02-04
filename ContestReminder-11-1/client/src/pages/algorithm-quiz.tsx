@@ -37,7 +37,7 @@ export default function AlgorithmQuizPage() {
     const queryClient = useQueryClient();
 
     const { data: questions, refetch } = useQuery<QuizQuestion[]>({
-        queryKey: ["/api/challenges/quiz/questions", { topic, difficulty, count: 10 }],
+        queryKey: ["/api/challenges/quiz/questions", { topic, difficulty, count: 2 }],
         enabled: quizStarted,
     });
 
@@ -70,9 +70,23 @@ export default function AlgorithmQuizPage() {
 
     const currentQuestion = questions?.[currentQuestionIndex];
 
+    useEffect(() => {
+        if (quizFinished && questions && userAnswers.length === questions.length) {
+            const score = calculateScore();
+            submitQuiz.mutate({
+                questionIds: questions.map((q) => q.id),
+                userAnswers: userAnswers,
+                score,
+                totalQuestions: questions.length,
+                topic,
+                timeSpent: questions.reduce((acc, q) => acc + q.timeLimit, 0),
+            });
+        }
+    }, [quizFinished]);
+
     // Timer countdown
     useEffect(() => {
-        if (!quizStarted || quizFinished || showExplanation || !currentQuestion) return;
+        if (!quizStarted || showExplanation || !currentQuestion || quizFinished) return;
 
         setTimeLeft(currentQuestion.timeLimit);
         const timer = setInterval(() => {
@@ -102,12 +116,19 @@ export default function AlgorithmQuizPage() {
     };
 
     const handleSubmitAnswer = () => {
-        if (selectedAnswer === null) {
-            toast({
-                title: "Select an answer",
-                description: "Please select an option before continuing.",
-                variant: "destructive",
-            });
+        if (selectedAnswer === null || showExplanation) {
+            if (selectedAnswer === null) {
+                toast({
+                    title: "Select an answer",
+                    description: "Please select an option before continuing.",
+                    variant: "destructive",
+                });
+            }
+            return;
+        }
+
+        // Prevent duplicate answers for the same question
+        if (userAnswers.length > currentQuestionIndex) {
             return;
         }
 
@@ -118,8 +139,9 @@ export default function AlgorithmQuizPage() {
     const handleNextQuestion = () => {
         if (!questions) return;
 
-        // If no answer selected (time ran out), record -1
-        if (selectedAnswer === null && !showExplanation) {
+        // Ensure an answer is recorded for the current question if not already present
+        // (e.g., if timer ran out or user skipped)
+        if (userAnswers.length === currentQuestionIndex) {
             setUserAnswers((prev) => [...prev, -1]);
         }
 
@@ -129,29 +151,17 @@ export default function AlgorithmQuizPage() {
             setShowExplanation(false);
         } else {
             // Quiz finished
-            const finalAnswers = selectedAnswer !== null ? [...userAnswers, selectedAnswer] : [...userAnswers, -1];
-            const score = finalAnswers.reduce((acc, ans, idx) => {
-                return ans === questions[idx].correctAnswer ? acc + 1 : acc;
-            }, 0);
-
-            submitQuiz.mutate({
-                questionIds: questions.map((q) => q.id),
-                userAnswers: finalAnswers,
-                score,
-                totalQuestions: questions.length,
-                topic,
-                timeSpent: questions.reduce((acc, q) => acc + q.timeLimit, 0),
-            });
-
+            // Use the updated userAnswers for score calculation
+            // Since setUserAnswers is async, we may need to calculate score again carefully
             setQuizFinished(true);
             triggerConfetti.realistic();
         }
     };
 
     const calculateScore = () => {
-        if (!questions) return 0;
-        const finalAnswers = [...userAnswers];
-        return finalAnswers.reduce((acc, ans, idx) => {
+        if (!questions || !userAnswers) return 0;
+        return userAnswers.reduce((acc, ans, idx) => {
+            if (idx >= questions.length) return acc;
             return ans === questions[idx].correctAnswer ? acc + 1 : acc;
         }, 0);
     };
@@ -230,7 +240,7 @@ export default function AlgorithmQuizPage() {
                             onClick={handleStartQuiz}
                             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-6 text-lg"
                         >
-                            Start Quiz (10 Questions)
+                            Start Quiz (2 Questions)
                         </Button>
                     </CardContent>
                 </Card>
