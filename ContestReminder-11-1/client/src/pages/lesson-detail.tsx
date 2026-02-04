@@ -40,6 +40,7 @@ export default function LessonDetail() {
     const [quizSubmitted, setQuizSubmitted] = useState(false);
     const [quizCorrect, setQuizCorrect] = useState(false);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [showQuiz, setShowQuiz] = useState(false);
 
     // Queries
     const { data: course } = useQuery<Course>({
@@ -63,6 +64,13 @@ export default function LessonDetail() {
         queryKey: ["/api/users", user?.id, "lessons", lessonId, "progress"],
         enabled: !!user && !!lessonId,
     });
+
+    useEffect(() => {
+        setShowQuiz(false);
+        setCurrentQuestionIndex(0);
+        setSelectedOption(null);
+        setQuizSubmitted(false);
+    }, [lessonId]);
 
     // Mutations
     const completeMutation = useMutation({
@@ -174,14 +182,14 @@ export default function LessonDetail() {
 
                             {/* Media Section */}
                             <div className="aspect-video w-full rounded-3xl overflow-hidden bg-slate-900 border border-white/5 shadow-2xl relative group">
-                                {lesson.videoUrl ? (
+                                {lesson.videoUrl && !showQuiz ? (
                                     <iframe
                                         src={lesson.videoUrl}
                                         className="w-full h-full"
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                         allowFullScreen
                                     />
-                                ) : lesson.type === "quiz" || (lesson.quizData && (lesson.quizData as any).length > 0) ? (
+                                ) : (lesson.quizData && (lesson.quizData as any).length > 0) ? (
                                     <div className="w-full h-full bg-slate-900/50 backdrop-blur-xl overflow-y-auto custom-scrollbar">
                                         <div className="p-8 space-y-6 max-w-2xl mx-auto h-full flex flex-col justify-center">
                                             <div className="flex items-center justify-between">
@@ -222,13 +230,24 @@ export default function LessonDetail() {
                                             </div>
 
                                             {!quizSubmitted ? (
-                                                <Button
-                                                    className="w-full bg-white text-slate-950 hover:bg-slate-200 rounded-2xl font-black uppercase text-xs tracking-widest h-14"
-                                                    disabled={selectedOption === null}
-                                                    onClick={handleQuizSubmit}
-                                                >
-                                                    Submit Response
-                                                </Button>
+                                                <div className="flex gap-4">
+                                                    {lesson.videoUrl && (
+                                                        <Button
+                                                            variant="outline"
+                                                            className="flex-1 border-white/10 hover:bg-white/5 rounded-2xl font-black uppercase text-xs tracking-widest h-14"
+                                                            onClick={() => setShowQuiz(false)}
+                                                        >
+                                                            Back to Intel
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        className="flex-[2] bg-white text-slate-950 hover:bg-slate-200 rounded-2xl font-black uppercase text-xs tracking-widest h-14"
+                                                        disabled={selectedOption === null}
+                                                        onClick={handleQuizSubmit}
+                                                    >
+                                                        Submit Response
+                                                    </Button>
+                                                </div>
                                             ) : quizCorrect ? (
                                                 currentQuestionIndex < (lesson.quizData as any).length - 1 ? (
                                                     <Button
@@ -342,14 +361,24 @@ export default function LessonDetail() {
                                         </div>
                                     </div>
 
-                                    {!progress?.completed && lesson.type !== 'quiz' && (
-                                        <Button
-                                            onClick={() => completeMutation.mutate({ completed: true })}
-                                            disabled={completeMutation.isPending}
-                                            className="w-full bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black uppercase text-[10px] tracking-widest h-12"
-                                        >
-                                            Mark as Complete
-                                        </Button>
+                                    {!progress?.completed && (
+                                        lesson.quizData && (lesson.quizData as any).length > 0 && !showQuiz ? (
+                                            <Button
+                                                onClick={() => setShowQuiz(true)}
+                                                className="w-full bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl font-black uppercase text-[10px] tracking-widest h-12"
+                                            >
+                                                <ShieldCheck className="w-4 h-4 mr-2" />
+                                                Take Module Quiz
+                                            </Button>
+                                        ) : lesson.type !== 'quiz' && !showQuiz ? (
+                                            <Button
+                                                onClick={() => completeMutation.mutate({ completed: true })}
+                                                disabled={completeMutation.isPending}
+                                                className="w-full bg-blue-600 text-white hover:bg-blue-700 rounded-2xl font-black uppercase text-[10px] tracking-widest h-12"
+                                            >
+                                                Mark as Complete
+                                            </Button>
+                                        ) : null
                                     )}
                                 </Card>
                             </AnimatePresence>
