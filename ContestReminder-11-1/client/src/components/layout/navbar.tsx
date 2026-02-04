@@ -23,6 +23,7 @@ export default function Navbar() {
 
   const { data: daily } = useQuery<DailyChallengeData>({
     queryKey: ["/api/daily-challenge"],
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 
   const navItems = [
@@ -87,7 +88,7 @@ export default function Navbar() {
                   title={daily ? `Click to solve Daily Challenge` : "Loading Daily Challenge..."}
                 >
                   <Flame className={`h-5 w-5 transition-colors duration-200 ${daily?.solvedToday
-                    ? "text-orange-500 fill-orange-500 animate-pulse drop-shadow-[0_0_8px_rgba(249,115,22,1)]"
+                    ? "text-orange-500 fill-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,1)]"
                     : "text-slate-400 group-hover:text-orange-400"
                     }`} />
                   <span className={`text-sm font-black tracking-wide ${daily?.solvedToday ? "text-orange-400" : "text-slate-200 group-hover:text-white"}`}>
