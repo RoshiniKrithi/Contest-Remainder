@@ -9,7 +9,6 @@ interface ChallengeStats {
     typing: { completed: number; bestWPM: number };
     quiz: { completed: number; averageScore: number };
     brainTeaser: { streak: number; totalSolved: number };
-    marathon: { participated: number; bestRank: number };
 }
 
 export default function Challenges() {
@@ -31,18 +30,6 @@ export default function Challenges() {
             iconColor: "text-blue-400",
         },
         {
-            id: "quiz",
-            title: "Algorithm Quiz",
-            description: "Test your algorithm knowledge with timed multiple-choice questions. Master data structures!",
-            icon: Brain,
-            color: "from-purple-500 to-pink-500",
-            bgGradient: "from-purple-500/10 to-pink-500/10",
-            link: "/challenges/quiz",
-            stats: stats?.quiz ? `Avg Score: ${stats.quiz.averageScore}% | Completed: ${stats.quiz.completed}` : "Start your first quiz!",
-            iconBg: "bg-purple-500/20",
-            iconColor: "text-purple-400",
-        },
-        {
             id: "brain-teaser",
             title: "Daily Brain Teaser",
             description: "Solve a new puzzle every day! Build your streak and sharpen your problem-solving skills.",
@@ -55,16 +42,16 @@ export default function Challenges() {
             iconColor: "text-orange-400",
         },
         {
-            id: "marathon",
-            title: "Weekly Marathon",
-            description: "Compete in weekly coding marathons. Solve multiple problems and climb the leaderboard!",
-            icon: Trophy,
-            color: "from-green-500 to-emerald-500",
-            bgGradient: "from-green-500/10 to-emerald-500/10",
-            link: "/challenges/marathon",
-            stats: stats?.marathon ? `Best Rank: #${stats.marathon.bestRank} | Marathons: ${stats.marathon.participated}` : "Join your first marathon!",
-            iconBg: "bg-green-500/20",
-            iconColor: "text-green-400",
+            id: "quiz",
+            title: "Algorithm Quiz",
+            description: "Test your algorithm knowledge with timed multiple-choice questions. Master data structures!",
+            icon: Brain,
+            color: "from-purple-500 to-pink-500",
+            bgGradient: "from-purple-500/10 to-pink-500/10",
+            link: "/challenges/quiz",
+            stats: stats?.quiz ? `Avg Score: ${stats.quiz.averageScore}% | Completed: ${stats.quiz.completed}` : "Start your first quiz!",
+            iconBg: "bg-purple-500/20",
+            iconColor: "text-purple-400",
         },
     ];
 
@@ -98,7 +85,7 @@ export default function Challenges() {
                 </motion.div>
 
                 {/* Challenge Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {challenges.map((challenge, index) => {
                         const IconComponent = challenge.icon;
                         return (
@@ -167,22 +154,38 @@ export default function Challenges() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                                 <div className="space-y-2 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                                    <div className="text-3xl font-black text-blue-400">{stats?.typing?.completed || 0}</div>
+                                    <div className="flex justify-between items-start">
+                                        <div className="text-3xl font-black text-blue-400">{stats?.typing?.completed || 0}</div>
+                                        <Keyboard className="h-5 w-5 text-blue-500/50" />
+                                    </div>
                                     <div className="text-sm text-slate-400">Typing Challenges</div>
+                                    <div className="text-xs font-bold text-blue-300/70 uppercase">Best: {stats?.typing?.bestWPM || 0} WPM</div>
                                 </div>
                                 <div className="space-y-2 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
-                                    <div className="text-3xl font-black text-purple-400">{stats?.quiz?.completed || 0}</div>
+                                    <div className="flex justify-between items-start">
+                                        <div className="text-3xl font-black text-purple-400">{stats?.quiz?.completed || 0}</div>
+                                        <Brain className="h-5 w-5 text-purple-500/50" />
+                                    </div>
                                     <div className="text-sm text-slate-400">Quizzes Completed</div>
+                                    <div className="text-xs font-bold text-purple-300/70 uppercase">Avg: {stats?.quiz?.averageScore || 0}%</div>
                                 </div>
                                 <div className="space-y-2 p-4 rounded-xl bg-orange-500/10 border border-orange-500/20">
-                                    <div className="text-3xl font-black text-orange-400">🔥 {stats?.brainTeaser?.streak || 0}</div>
+                                    <div className="flex justify-between items-start">
+                                        <div className="text-3xl font-black text-orange-400">🔥 {stats?.brainTeaser?.streak || 0}</div>
+                                        <Zap className="h-5 w-5 text-orange-500/50" />
+                                    </div>
                                     <div className="text-sm text-slate-400">Day Streak</div>
+                                    <div className="text-xs font-bold text-orange-300/70 uppercase">Keep it up!</div>
                                 </div>
-                                <div className="space-y-2 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
-                                    <div className="text-3xl font-black text-green-400">{stats?.marathon?.participated || 0}</div>
-                                    <div className="text-sm text-slate-400">Marathons Joined</div>
+                                <div className="space-y-2 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                    <div className="flex justify-between items-start">
+                                        <div className="text-3xl font-black text-emerald-400">{stats?.brainTeaser?.totalSolved || 0}</div>
+                                        <Target className="h-5 w-5 text-emerald-500/50" />
+                                    </div>
+                                    <div className="text-sm text-slate-400">Puzzles Solved</div>
+                                    <div className="text-xs font-bold text-emerald-300/70 uppercase">Brain Teasers</div>
                                 </div>
                             </div>
                         </CardContent>
