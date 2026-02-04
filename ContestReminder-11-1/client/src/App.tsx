@@ -27,7 +27,6 @@ import Challenges from "@/pages/challenges";
 import TypingChallenge from "@/pages/typing-challenge";
 import AlgorithmQuiz from "@/pages/algorithm-quiz";
 import BrainTeaser from "@/pages/brain-teaser";
-import CodingMarathon from "@/pages/coding-marathon";
 import AuthPage from "@/pages/auth-page";
 import NotFound from "@/pages/not-found";
 import LoadingScreen from "@/components/layout/loading-screen";
@@ -65,7 +64,6 @@ function Router() {
         <ProtectedRoute path="/challenges/typing" component={TypingChallenge} />
         <ProtectedRoute path="/challenges/quiz" component={AlgorithmQuiz} />
         <ProtectedRoute path="/challenges/brain-teaser" component={BrainTeaser} />
-        <ProtectedRoute path="/challenges/marathon" component={CodingMarathon} />
         <Route component={NotFound} />
       </Switch>
     </AnimatePresence>
