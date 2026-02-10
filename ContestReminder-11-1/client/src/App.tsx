@@ -72,6 +72,8 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
+  console.log("AppContent rendering at:", location);
+
   const isAdminRoute = location.startsWith("/admin");
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -93,12 +95,13 @@ function AppContent() {
   return (
     <TooltipProvider>
       {isLoading && <LoadingScreen onLoadingComplete={() => setIsLoading(false)} />}
-      <div className={`min-h-screen transition-all duration-300 ${isAdminRoute ? '' : 'bg-gradient-to-br from-gray-900 to-gray-800'}`}>
+      <div style={{ backgroundColor: '#0f172a', color: 'white' }} className={`min-h-screen transition-all duration-300 ${isAdminRoute ? '' : 'bg-gradient-to-br from-gray-900 to-gray-800'}`}>
         {!isAdminRoute && <Navbar />}
         <main className="relative">
           <Router />
         </main>
       </div>
+
       <Toaster />
     </TooltipProvider>
   );

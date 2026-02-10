@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Code, Home, Globe, GraduationCap, Flame, Gamepad2 } from "lucide-react";
 import { UserDropdown } from "./user-dropdown";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 
 interface DailyChallengeData {
   problemId: string;
@@ -12,8 +13,10 @@ interface DailyChallengeData {
   solvedToday: boolean;
 }
 
+
 export default function Navbar() {
   const [location, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/" && location === "/") return true;
@@ -24,7 +27,9 @@ export default function Navbar() {
   const { data: daily } = useQuery<DailyChallengeData>({
     queryKey: ["/api/daily-challenge"],
     staleTime: 5 * 60 * 1000, // 5 minutes cache
+    enabled: !!user,
   });
+
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: Home },
