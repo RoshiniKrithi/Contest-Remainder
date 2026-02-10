@@ -11,12 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 type AuthContextType = {
   user: SelectUser | null;
   isLoading: boolean;
-  isLoading: boolean;
   error: Error | null;
   loginMutation: UseMutationResult<SelectUser | null, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, InsertUser>;
 };
+
 
 type LoginData = Pick<InsertUser, "username" | "password">;
 

@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -9,7 +10,7 @@ import { User as SelectUser } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends SelectUser { }
   }
 }
 
@@ -55,6 +56,83 @@ export function setupAuth(app: Express) {
     }),
   );
 
+  // Google OAuth Strategy
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+  const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (googleClientId && googleClientSecret) {
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: googleClientId,
+          clientSecret: googleClientSecret,
+          callbackURL: "/api/auth/google/callback",
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            const googleId = profile.id;
+            const email = profile.emails?.[0]?.value;
+            const displayName = profile.displayName;
+
+            // 1. Try to find user by Google ID (existing user)
+            let user = await storage.getUserByGoogleId(googleId);
+            if (user) {
+              return done(null, user);
+            }
+
+            // 1.5. Fallback: Try to find user by old username format (migration path)
+            const oldUsername = `google_${googleId}`;
+            user = await storage.getUserByUsername(oldUsername);
+            if (user) {
+              // Found legacy user. In a real app we would update their googleId here.
+              return done(null, user);
+            }
+
+            // 2. Generate a friendly username
+            let baseUsername = displayName || (email ? email.split('@')[0] : `User_${googleId.slice(-6)}`);
+
+            // Sanitize username: replace spaces and special chars with underscores, keep alphanumeric
+            baseUsername = baseUsername.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+
+            // Ensure username is not empty after sanitization
+            if (!baseUsername) {
+              baseUsername = `user_${googleId.slice(-6)}`;
+            }
+
+            // 3. Ensure uniqueness
+            let username = baseUsername;
+            let counter = 1;
+
+            while (true) {
+              const existing = await storage.getUserByUsername(username);
+              if (!existing) {
+                break;
+              }
+              username = `${baseUsername}_${Math.floor(Math.random() * 10000)}`;
+              counter++;
+              if (counter > 10) { // Safety break, fallback to google_id if extremely unlucky
+                username = `google_${googleId}`;
+                break;
+              }
+            }
+
+            // 4. Create new user
+            user = await storage.createUser({
+              username: username,
+              password: await hashPassword(randomBytes(32).toString("hex")), // Random password
+              role: "user", // Default role
+              googleId: googleId,
+            });
+
+            return done(null, user);
+          } catch (error) {
+            return done(error as Error);
+          }
+        }
+      )
+    );
+  }
+
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: string, done) => {
     const user = await storage.getUser(id);
@@ -93,4 +171,23 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  // Google OAuth routes
+  if (googleClientId && googleClientSecret) {
+    app.get("/api/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+    app.get(
+      "/api/auth/google/callback",
+      passport.authenticate("google", { failureRedirect: "/auth" }),
+      (req, res) => {
+        // Successful authentication, redirect to dashboard
+        res.redirect("/");
+      }
+    );
+  } else {
+    // If Google OAuth is not configured, return helpful message
+    app.get("/api/auth/google", (req, res) => {
+      res.status(503).send("Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables.");
+    });
+  }
 }
