@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 type Theme = "dark";
 
 type ThemeProviderProps = {
-  children: React.ReactNode;
+  children: ReactNode;
   defaultTheme?: Theme;
   storageKey?: string;
 };
