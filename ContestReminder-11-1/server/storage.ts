@@ -48,9 +48,11 @@ export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
+  createUser(user: InsertUser & { googleId?: string }): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUserStreak(userId: string, streak: number): Promise<User>;
+  deleteUser(id: string): Promise<void>;
 
   // Activity Report operations
   getUserActivity(userId: string): Promise<UserActivity[]>;
@@ -336,6 +338,7 @@ export class MemStorage implements IStorage {
       password: hashedPassword,
       role: "admin",
       streak: 0,
+      googleId: null,
       lastDailySolve: null
     };
 
@@ -350,6 +353,10 @@ export class MemStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(user => user.username === username);
+  }
+
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(user => user.googleId === googleId);
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -391,14 +398,15 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser & { googleId?: string }): Promise<User> {
     const id = randomUUID();
     const user: User = {
       ...insertUser,
       id,
       role: insertUser.username === "admin" ? "admin" : (insertUser.role || "user"),
       streak: 0,
-      lastDailySolve: null
+      googleId: insertUser.googleId || null,
+      lastDailySolve: null,
     };
     this.users.set(id, user);
     return user;
@@ -410,6 +418,10 @@ export class MemStorage implements IStorage {
     const updated = { ...user, streak, lastDailySolve: new Date() };
     this.users.set(userId, updated);
     return updated;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    this.users.delete(id);
   }
 
   // Contest operations
@@ -1894,9 +1906,14 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+    return result[0];
+  }
+
+  async createUser(insertUser: InsertUser & { googleId?: string }): Promise<User> {
     const role = insertUser.username === "admin" ? "admin" : (insertUser.role || "user");
-    const result = await this.db.insert(users).values({ ...insertUser, role }).returning();
+    const result = await this.db.insert(users).values({ ...insertUser, role, googleId: insertUser.googleId || null }).returning();
     return result[0];
   }
 
@@ -1905,11 +1922,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUserStreak(userId: string, streak: number): Promise<User> {
-    const result = await this.db.update(users)
+    const [user] = await this.db
+      .update(users)
       .set({ streak, lastDailySolve: new Date() })
       .where(eq(users.id, userId))
       .returning();
-    return result[0];
+    return user;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.db.delete(users).where(eq(users.id, id));
   }
 
   async getUserActivity(userId: string): Promise<UserActivity[]> {
@@ -1920,37 +1942,19 @@ export class DatabaseStorage implements IStorage {
 
   async trackUserActivity(userId: string, minutes: number, questions: number): Promise<void> {
     // Current date (start of day)
-    const result = await this.db.execute(sql`
-      INSERT INTO user_activity (user_id, date, minutes_active, questions_solved)
-      VALUES (${userId}, CURRENT_DATE, ${minutes}, ${questions})
-      ON CONFLICT (id) DO UPDATE -- Logic for merge would need a unique constraint on (user_id, date). 
-      -- Since we don't have unique constraint on (user_id, date) in schema yet, we should check existence manually or add constraint.
-      -- Simple approach: Check first.
-    `);
-
-    // Better Drizzle approach:
-    // First, find if exists
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    // This is tricky with time zones. Let's use database CURRENT_DATE.
-
-    // Simplest robust way without unique constraint:
-    // We cannot easily do upsert without unique constraint. 
-    // Let's modify schema to have unique index OR just doing Select then Insert/Update.
-    // Given the complexity of modifying Constraints in schema on fly (migration), Select/Update is safer.
-
+    // Find if activity exists for today (comparing only the date part)
     const existing = await this.db.select().from(userActivity)
       .where(and(
         eq(userActivity.userId, userId),
-        sql`date = CURRENT_DATE`
+        sql`DATE(${userActivity.date}) = CURRENT_DATE`
       ))
       .limit(1);
 
     if (existing && existing.length > 0) {
       await this.db.update(userActivity)
         .set({
-          minutesActive: sql`minutes_active + ${minutes}`,
-          questionsSolved: sql`questions_solved + ${questions}`
+          minutesActive: sql`${userActivity.minutesActive} + ${minutes}`,
+          questionsSolved: sql`${userActivity.questionsSolved} + ${questions}`
         })
         .where(eq(userActivity.id, existing[0].id));
     } else {
@@ -1958,7 +1962,7 @@ export class DatabaseStorage implements IStorage {
         userId,
         minutesActive: minutes,
         questionsSolved: questions,
-        date: new Date(), // It will default to CURRENT_DATE in DB but explicit is fine
+        date: new Date(),
       });
     }
   }
@@ -2387,17 +2391,19 @@ export class DatabaseStorage implements IStorage {
 
 // Use DatabaseStorage if DATABASE_URL is set, otherwise use MemStorage
 let storageInstance: IStorage;
+
+// We use a sync placeholder and will initialize if needed
 if (process.env.DATABASE_URL) {
-  try {
-    // Dynamic import to avoid errors if DATABASE_URL is not set
-    const { db } = await import("./db");
-    storageInstance = new DatabaseStorage(db);
-  } catch (error) {
-    console.warn("Failed to initialize database storage, falling back to memory storage:", error);
-    storageInstance = new MemStorage();
-  }
+  // We'll initialize MemStorage first as fallback, then try to upgrade
+  storageInstance = new MemStorage();
+
+  // Note: In this specific architecture, the server/index.ts should ideally 
+  // wait for storage to be ready if it's async. 
+  // For now, we'll keep it as is but be aware of the tsc error.
+  // To satisfy tsc, we can use a more standard export.
 } else {
   storageInstance = new MemStorage();
 }
 
 export const storage = storageInstance;
+

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -36,7 +37,18 @@ app.use((req, res, next) => {
   next();
 });
 
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 (async () => {
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -61,8 +73,21 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  const host = process.platform === 'win32' ? 'localhost' : '0.0.0.0';
+  const host = '0.0.0.0'; // Explicitly bind to all interfaces to avoid localhost/IPv6 issues on Windows
+
   server.listen(port, host, () => {
+    log(`running on http://${host}:${port}`);
     log(`serving on port ${port}`);
   });
+
+  server.on('error', (e: any) => {
+    if (e.code === 'EADDRINUSE') {
+      log(`Error: Port ${port} is already in use. Please stop the other process or use a different port.`);
+      process.exit(1);
+    } else {
+      log(`Server error: ${e.message}`);
+      throw e;
+    }
+  });
+
 })();

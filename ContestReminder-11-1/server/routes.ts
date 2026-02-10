@@ -724,6 +724,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accuracy,
         timeSpent,
       });
+
+      // Track activity
+      const minutesSpent = Math.max(1, Math.floor(timeSpent / 60));
+      await storage.trackUserActivity(req.user.id, minutesSpent, 1);
+
       res.status(201).json(score);
     } catch (error) {
       res.status(400).json({ error: "Failed to submit typing score" });
@@ -771,6 +776,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timeSpent,
       });
       console.log(`✅ Quiz submitted by user ${req.user.username}: Score ${score}/${totalQuestions}`);
+
+      // Track activity
+      const minutesSpent = Math.max(1, Math.floor(timeSpent / 60));
+      await storage.trackUserActivity(req.user.id, minutesSpent, score);
+
       res.status(201).json(attempt);
     } catch (error) {
       res.status(400).json({ error: "Failed to submit quiz attempt" });
@@ -846,6 +856,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🔥 Streak updated for user ${user.username}: ${newStreak} days`);
           }
         }
+        // Track activity for correct answer
+        await storage.trackUserActivity(req.user.id, 10, 1);
+      } else {
+        // Track activity even if incorrect (time spent)
+        await storage.trackUserActivity(req.user.id, 5, 0);
       }
 
       res.json(result);
