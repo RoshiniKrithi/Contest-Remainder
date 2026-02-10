@@ -23,20 +23,26 @@ export default function ActivityHeatmap() {
     const days = eachDayOfInterval({ start: startDate, end: today });
 
     // Map activity to dictionary for O(1) lookup
-    const activityMap = new Map<string, UserActivity>();
+    const activityMap = new Map<string, { minutesActive: number; questionsSolved: number }>();
     activity?.forEach(a => {
-        // Ensure date format matches
-        const dateStr = new Date(a.date).toISOString().split('T')[0];
-        activityMap.set(dateStr, a);
+        // Use local date string to match format() calls
+        const localDate = new Date(a.date);
+        const dateStr = format(localDate, 'yyyy-MM-dd');
+
+        const existing = activityMap.get(dateStr) || { minutesActive: 0, questionsSolved: 0 };
+        activityMap.set(dateStr, {
+            minutesActive: existing.minutesActive + (a.minutesActive || 0),
+            questionsSolved: existing.questionsSolved + (a.questionsSolved || 0)
+        });
     });
 
-    // Improved contrast colors
+    // Improved contrast colors with vibrant highlight effects
     const getIntensityColor = (questions: number) => {
-        if (questions === 0) return "bg-gray-800/40 border border-gray-800"; // Empty cell with border
-        if (questions <= 2) return "bg-emerald-900/60 border border-emerald-900/50";
-        if (questions <= 5) return "bg-emerald-700/80 border border-emerald-700/50";
-        if (questions <= 10) return "bg-emerald-500 border border-emerald-500/50";
-        return "bg-emerald-400 border border-emerald-400/50 shadow-[0_0_8px_rgba(52,211,153,0.4)]";
+        if (questions === 0) return "bg-gray-800/30 border border-gray-800/50"; // Subtler empty cell
+        if (questions <= 2) return "bg-emerald-900 border border-emerald-800/50 shadow-[0_0_5px_rgba(6,78,59,0.3)]";
+        if (questions <= 5) return "bg-emerald-600 border border-emerald-500/50 shadow-[0_0_8px_rgba(5,150,105,0.4)]";
+        if (questions <= 10) return "bg-emerald-400 border border-white/20 shadow-[0_0_12px_rgba(52,211,153,0.5)]";
+        return "bg-emerald-300 border border-white/40 shadow-[0_0_15px_rgba(110,231,183,0.8)]";
     };
 
     // Group days by weeks for the grid
@@ -145,11 +151,11 @@ export default function ActivityHeatmap() {
                     <div className="flex items-center gap-3 bg-gray-900/40 px-3 py-1.5 rounded-full border border-gray-800/50">
                         <span className="text-[9px] uppercase tracking-wider font-bold text-gray-600">Less</span>
                         <div className="flex gap-[3px]">
-                            <div className="w-2 h-2 rounded-[1px] bg-gray-800/40 border border-gray-800" />
-                            <div className="w-2 h-2 rounded-[1px] bg-emerald-900/60 border border-emerald-900/50" />
-                            <div className="w-2 h-2 rounded-[1px] bg-emerald-700/80 border border-emerald-700/50" />
-                            <div className="w-2 h-2 rounded-[1px] bg-emerald-500 border border-emerald-500/50" />
-                            <div className="w-2 h-2 rounded-[1px] bg-emerald-400 border border-emerald-400/50" />
+                            <div className="w-2 h-2 rounded-[1px] bg-gray-800/30 border border-gray-800/50" />
+                            <div className="w-2 h-2 rounded-[1px] bg-emerald-900 border border-emerald-800/50 shadow-[0_0_5px_rgba(6,78,59,0.3)]" />
+                            <div className="w-2 h-2 rounded-[1px] bg-emerald-600 border border-emerald-500/50 shadow-[0_0_8px_rgba(5,150,105,0.4)]" />
+                            <div className="w-2 h-2 rounded-[1px] bg-emerald-400 border border-white/20 shadow-[0_0_12px_rgba(52,211,153,0.5)]" />
+                            <div className="w-2 h-2 rounded-[1px] bg-emerald-300 border border-white/40 shadow-[0_0_15px_rgba(110,231,183,1)]" />
                         </div>
                         <span className="text-[9px] uppercase tracking-wider font-bold text-gray-600">More</span>
                     </div>
