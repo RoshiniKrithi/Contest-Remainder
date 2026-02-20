@@ -1,12 +1,12 @@
 import { initializeApp, app } from "../server/app";
 
-// Optimization: Cache the initialization promise
+// Performance: Start initialization immediately
 const initPromise = initializeApp();
 
 export default async function handler(req: any, res: any) {
-    // Ensure the app is fully initialized before handling the first request
+    // Wait for routes and DB to be ready
     await initPromise;
 
-    // Forward the request to Express
+    // Directly pass to Express
     return app(req, res);
 }
