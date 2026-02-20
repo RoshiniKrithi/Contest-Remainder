@@ -1,12 +1,15 @@
+import "dotenv/config";
 import { initializeApp, app } from "../server/app";
 
-// Performance: Start initialization immediately
-const initPromise = initializeApp();
+// Optimization: Start initialization as soon as the lambda wakes up
+const initPromise = initializeApp().catch(err => {
+    console.error("Critical: Failed to initialize application:", err);
+});
 
 export default async function handler(req: any, res: any) {
-    // Wait for routes and DB to be ready
+    // Wait for the server (routes, DB connections, etc) to be ready
     await initPromise;
 
-    // Directly pass to Express
+    // Hand over the request to Express
     return app(req, res);
 }
