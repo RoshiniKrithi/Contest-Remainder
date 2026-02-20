@@ -1494,6 +1494,59 @@ export class DatabaseStorage implements IStorage {
       tableName: 'session',
     });
     this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
+    this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));
+    this.seedChallengeData().catch(err => console.error("Challenge seeding failed:", err));
+  }
+
+  async seedChallengeData() {
+    try {
+      // Seed Typing Challenges
+      const existingTyping = await this.db.select().from(typingChallenges);
+      if (existingTyping.length === 0) {
+        console.log("🌱 Seeding Typing Challenges...");
+        await this.db.insert(typingChallenges).values(typingSeed);
+      }
+
+      // Seed Quiz Questions
+      const existingQuiz = await this.db.select().from(quizQuestions);
+      if (existingQuiz.length === 0) {
+        console.log("🌱 Seeding Quiz Questions...");
+        await this.db.insert(quizQuestions).values(quizSeed);
+      }
+
+      // Seed Brain Teasers
+      const existingTeasers = await this.db.select().from(brainTeasers);
+      if (existingTeasers.length === 0) {
+        console.log("🌱 Seeding Brain Teasers...");
+        await this.db.insert(brainTeasers).values(teaserSeed);
+      }
+    } catch (err) {
+      console.error("Error seeding challenge data:", err);
+    }
+  }
+
+  private async initializeAdminUser() {
+    try {
+      const [existingAdmin] = await this.db.select().from(users).where(eq(users.username, "admin"));
+      if (existingAdmin) return;
+
+      const { scrypt, randomBytes } = await import("crypto");
+      const { promisify } = await import("util");
+      const scryptAsync = promisify(scrypt);
+
+      const salt = randomBytes(16).toString("hex");
+      const buf = (await scryptAsync("admin123", salt, 64)) as Buffer;
+      const hashedPassword = `${buf.toString("hex")}.${salt}`;
+
+      await this.db.insert(users).values({
+        username: "admin",
+        password: hashedPassword,
+        role: "admin",
+      });
+      console.log("✅ Default admin user created (admin / admin123)");
+    } catch (err) {
+      console.error("Error creating admin user:", err);
+    }
   }
 
   async autoPatchDatabase() {
