@@ -7,12 +7,34 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check route
+// Debug route to check files on Vercel
+app.get("/api/debug-files", async (req, res) => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
+
+    const check = (p: string) => ({
+        path: p,
+        exists: fs.existsSync(p),
+        stats: fs.existsSync(p) ? (fs.lstatSync(p).isDirectory() ? "dir" : "file") : "missing"
+    });
+
+    res.json({
+        cwd: process.cwd(),
+        meta_url: import.meta.url,
+        checks: [
+            check(path.resolve(process.cwd(), "dist", "public")),
+            check(path.resolve(process.cwd(), "dist", "public", "index.html")),
+            check(path.resolve(process.cwd(), "public")),
+            check(path.resolve(process.cwd(), "client")),
+        ]
+    });
+});
+
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", message: "Server is running", time: new Date().toISOString() });
 });
 
-// Request logging middleware
 app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
@@ -41,16 +63,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Setup global error handlers
-process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// Initializer function for production/serverless
 export async function initializeApp() {
     const httpServer = await registerRoutes(app);
 
