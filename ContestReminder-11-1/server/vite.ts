@@ -76,20 +76,27 @@ export function serveStatic(app: Express) {
 
   // Fallback check for different environment layouts
   if (!fs.existsSync(distPath)) {
-    distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
+    console.error(`❌ Static Assets Error: Could not find build artifacts in ${distPath}. Checking fallbacks...`);
+
+    // Fallback 1: Root public (if not built)
+    const fallback1 = path.join(process.cwd(), "public");
+    // Fallback 2: Local dist (for some vercel layouts)
+    const fallback2 = path.resolve(import.meta.dirname, "..", "dist", "public");
+
+    if (fs.existsSync(fallback1)) {
+      distPath = fallback1;
+    } else if (fs.existsSync(fallback2)) {
+      distPath = fallback2;
+    } else {
+      console.log("Current Directory Contents:", fs.readdirSync(process.cwd()));
+      if (fs.existsSync(path.join(process.cwd(), "dist"))) {
+        console.log("Dist Directory Contents:", fs.readdirSync(path.join(process.cwd(), "dist")));
+      }
+      return;
+    }
   }
 
-  if (!fs.existsSync(distPath)) {
-    distPath = path.resolve(process.cwd(), "public");
-  }
-
-  if (!fs.existsSync(distPath)) {
-    console.error(`❌ Static Assets Error: Could not find build artifacts in dist/public or fallbacks.`);
-    // Don't throw a fatal error here to allow API-only functionality if assets are missing
-    return;
-  }
-
-  log(`Serving static assets from: ${distPath}`);
+  log(`✅ Success: Serving assets from ${distPath}`);
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
