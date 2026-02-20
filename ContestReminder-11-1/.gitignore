@@ -26,6 +26,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 error.log
+errors.txt
+server_logs_snapshot.txt
+
+# Dev artifacts
+docs/daily-log-template.md
 
 # IDEs
 .vscode/
