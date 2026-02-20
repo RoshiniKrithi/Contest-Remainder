@@ -20,6 +20,7 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  log("Initializing Vite dev server...", "vite");
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
@@ -42,6 +43,7 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
+  log("Vite dev server created, adding middleware...", "vite");
   app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
