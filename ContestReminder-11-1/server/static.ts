@@ -14,42 +14,40 @@ export function log(message: string, source = "express") {
 }
 
 export function serveStatic(app: Express) {
-    // Try several potential locations for built assets in serverless environment
-    const possiblePaths = [
-        path.resolve(process.cwd(), "dist", "public"),
-        path.resolve(process.cwd(), "public"),
-        path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public"),
-        path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "dist", "public")
-    ];
+    // Use absolute paths for Vercel deployment
+    const distPath = path.resolve(process.cwd(), "dist", "public");
 
-    let distPath = "";
-    for (const p of possiblePaths) {
-        if (fs.existsSync(p)) {
-            distPath = p;
-            break;
-        }
-    }
-
-    if (!distPath) {
-        console.error(`❌ Static Assets Error: Could not find build artifacts in any expected location.`);
-        console.log(`Debug - process.cwd(): ${process.cwd()}`);
-        console.log(`Checked paths: ${possiblePaths.join(", ")}`);
+    if (!fs.existsSync(distPath)) {
+        console.error(`❌ Static Assets Error: dist/public NOT found at ${distPath}`);
+        // Check if the build actually happened
+        console.log("CWD contents:", fs.readdirSync(process.cwd()));
         return;
     }
 
     log(`✅ Serving production assets from ${distPath}`);
-    app.use(express.static(distPath));
 
-    // SPA fallback
+    // 1. Serve static files with high priority
+    app.use(express.static(distPath, {
+        index: false, // Don't serve index.html automatically here
+        setHeaders: (res, filePath) => {
+            // Force correct MIME types for key files
+            if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+            if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css');
+        }
+    }));
+
+    // 2. SPA fallback - ONLY for page navigations, NOT for broken assets
     app.use("*", (req, res, next) => {
-        if (req.path.startsWith("/api")) {
+        // If it looks like an asset request (has an extension) and we're here, it's a 404
+        if (req.path.includes('.') || req.path.startsWith("/api")) {
             return next();
         }
+
         const indexPath = path.resolve(distPath, "index.html");
         if (fs.existsSync(indexPath)) {
             res.sendFile(indexPath);
         } else {
-            res.status(404).send("Frontend build not found - please check build logs.");
+            res.status(404).send("Frontend build not found.");
         }
     });
 }
