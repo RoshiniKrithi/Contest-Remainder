@@ -2,19 +2,14 @@
     "version": 2,
     "buildCommand": "npm run build",
     "installCommand": "npm install",
-    "functions": {
-        "api/index.ts": {
-            "includeFiles": "dist/public/**"
-        }
-    },
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "/api/index.ts"
+            "destination": "/api"
         },
         {
             "source": "/(.*)",
-            "destination": "/api/index.ts"
+            "destination": "/api"
         }
     ]
 }

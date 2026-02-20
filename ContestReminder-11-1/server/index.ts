@@ -7,6 +7,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Diagnostic route for Vercel
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", message: "Server is running on Vercel", time: new Date().toISOString() });
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
