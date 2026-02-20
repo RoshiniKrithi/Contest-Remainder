@@ -5,21 +5,14 @@
     "framework": null,
     "functions": {
         "api/index.ts": {
-            "runtime": "@vercel/node"
+            "runtime": "@vercel/node",
+            "includeFiles": "dist/public/**"
         }
     },
-    "routes": [
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "api/index.ts"
-        },
-        {
-            "src": "/assets/(.*)",
-            "dest": "/dist/public/assets/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "api/index.ts"
+            "source": "/(.*)",
+            "destination": "/api/index"
         }
     ]
 }

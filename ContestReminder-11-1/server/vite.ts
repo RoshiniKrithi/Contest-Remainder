@@ -72,14 +72,24 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.join(process.cwd(), "dist", "public");
+  let distPath = path.join(process.cwd(), "dist", "public");
 
+  // Fallback check for different environment layouts
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    distPath = path.resolve(import.meta.dirname, "..", "dist", "public");
   }
 
+  if (!fs.existsSync(distPath)) {
+    distPath = path.resolve(process.cwd(), "public");
+  }
+
+  if (!fs.existsSync(distPath)) {
+    console.error(`❌ Static Assets Error: Could not find build artifacts in dist/public or fallbacks.`);
+    // Don't throw a fatal error here to allow API-only functionality if assets are missing
+    return;
+  }
+
+  log(`Serving static assets from: ${distPath}`);
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
