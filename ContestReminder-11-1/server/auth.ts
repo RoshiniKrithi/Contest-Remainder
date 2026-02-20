@@ -30,13 +30,18 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  const isProd = process.env.NODE_ENV === "production";
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "codearena-secret-key-change-in-production",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    proxy: true, // Required for secure cookies on Render/Vercel
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
+      secure: isProd, // Must be true for SameSite: none
+      sameSite: isProd ? "none" : "lax", // Required for cross-domain cookies
     }
   };
 

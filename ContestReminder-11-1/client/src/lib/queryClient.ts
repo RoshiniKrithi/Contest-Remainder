@@ -7,12 +7,15 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+const API_URL = import.meta.env.VITE_API_URL || "";
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith("http") ? url : `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -31,11 +34,13 @@ export const getQueryFn: <T>(options: {
     async ({ queryKey }) => {
       const baseUrl = queryKey.filter(part => typeof part !== 'object').join('/');
       const params = queryKey.find(part => typeof part === 'object' && part !== null);
-      const url = params
+      const relativeUrl = params
         ? `${baseUrl}?${new URLSearchParams(params as any).toString()}`
         : baseUrl;
 
-      const res = await fetch(url, {
+      const fullUrl = relativeUrl.startsWith("http") ? relativeUrl : `${API_URL}${relativeUrl.startsWith("/") ? "" : "/"}${relativeUrl}`;
+
+      const res = await fetch(fullUrl, {
         credentials: "include",
       });
 

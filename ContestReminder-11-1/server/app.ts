@@ -1,11 +1,22 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { serveStatic, log } from "./static";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// CORS setup for connecting Render backend to Vercel frontend
+app.use(cors({
+    origin: [
+        "http://localhost:5173", // Local Vite
+        "http://localhost:5000", // Local Express
+        process.env.FRONTEND_URL || "", // Vercel URL
+    ].filter(Boolean),
+    credentials: true,
+}));
 
 // Debug route to check files on Vercel
 app.get("/api/debug-files", async (req, res) => {
