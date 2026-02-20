@@ -52,7 +52,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Initializer function for production/serverless
 export async function initializeApp() {
-    await registerRoutes(app);
+    const httpServer = await registerRoutes(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
         const status = err.status || err.statusCode || 500;
@@ -64,7 +64,7 @@ export async function initializeApp() {
         serveStatic(app);
     }
 
-    return app;
+    return httpServer;
 }
 
 export { app };

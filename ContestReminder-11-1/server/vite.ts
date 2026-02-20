@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import fs from "fs";
-import path from "path";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
@@ -72,34 +73,28 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  let distPath = path.join(process.cwd(), "dist", "public");
+  let distPath = path.resolve(process.cwd(), "dist", "public");
 
-  // Fallback check for different environment layouts
   if (!fs.existsSync(distPath)) {
-    console.error(`❌ Static Assets Error: Could not find build artifacts in ${distPath}. Checking fallbacks...`);
+    // Try relative to this file (server/vite.ts -> ../dist/public)
+    distPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public");
+  }
 
-    // Fallback 1: Root public (if not built)
-    const fallback1 = path.join(process.cwd(), "public");
-    // Fallback 2: Local dist (for some vercel layouts)
-    const fallback2 = path.resolve(import.meta.dirname, "..", "dist", "public");
+  if (!fs.existsSync(distPath)) {
+    // Try relative to the app root (api/ -> ../dist/public)
+    distPath = path.resolve(process.cwd(), "public");
+  }
 
-    if (fs.existsSync(fallback1)) {
-      distPath = fallback1;
-    } else if (fs.existsSync(fallback2)) {
-      distPath = fallback2;
-    } else {
-      console.log("Current Directory Contents:", fs.readdirSync(process.cwd()));
-      if (fs.existsSync(path.join(process.cwd(), "dist"))) {
-        console.log("Dist Directory Contents:", fs.readdirSync(path.join(process.cwd(), "dist")));
-      }
-      return;
-    }
+  if (!fs.existsSync(distPath)) {
+    console.warn(`⚠️ Warning: Static Assets NOT found in common locations. Vercel deployment logs will help find them.`);
+    console.log(`Debug - process.cwd(): ${process.cwd()}`);
+    console.log(`Debug - Looked in: ${path.resolve(process.cwd(), "dist", "public")}`);
+    return;
   }
 
   log(`✅ Success: Serving assets from ${distPath}`);
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
