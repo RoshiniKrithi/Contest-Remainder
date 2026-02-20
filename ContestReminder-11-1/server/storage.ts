@@ -41,6 +41,8 @@ import { eq, and, desc, asc, sql } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 
 const MemoryStore = createMemoryStore(session);
+import { db } from "./db";
+
 
 export interface IStorage {
   sessionStore: session.Store;
@@ -2392,15 +2394,8 @@ export class DatabaseStorage implements IStorage {
 // Use DatabaseStorage if DATABASE_URL is set, otherwise use MemStorage
 let storageInstance: IStorage;
 
-// We use a sync placeholder and will initialize if needed
 if (process.env.DATABASE_URL) {
-  // We'll initialize MemStorage first as fallback, then try to upgrade
-  storageInstance = new MemStorage();
-
-  // Note: In this specific architecture, the server/index.ts should ideally 
-  // wait for storage to be ready if it's async. 
-  // For now, we'll keep it as is but be aware of the tsc error.
-  // To satisfy tsc, we can use a more standard export.
+  storageInstance = new DatabaseStorage(db);
 } else {
   storageInstance = new MemStorage();
 }
