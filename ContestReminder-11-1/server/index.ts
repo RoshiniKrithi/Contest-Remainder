@@ -78,11 +78,14 @@ process.on('unhandledRejection', (reason, promise) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   const host = '127.0.0.1'; // Use 127.0.0.1 for better local compatibility on Windows
 
-  server.listen(port, host, () => {
-    log(`running on http://${host}:${port}`);
-    log(`Local access: http://localhost:${port}`);
-    log(`serving on port ${port}`);
-  });
+  // Only start the server listener if we are not on Vercel
+  if (!process.env.VERCEL) {
+    server.listen(port, host, () => {
+      log(`running on http://${host}:${port}`);
+      log(`Local access: http://localhost:${port}`);
+      log(`serving on port ${port}`);
+    });
+  }
 
   server.on('error', (e: any) => {
     if (e.code === 'EADDRINUSE') {
@@ -95,3 +98,5 @@ process.on('unhandledRejection', (reason, promise) => {
   });
 
 })();
+
+export default app;
