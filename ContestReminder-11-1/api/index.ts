@@ -1,12 +1,20 @@
-import express from "express";
-const app = express();
+import serverless from "serverless-http";
+import { initializeApp } from "../server/app";
 
-app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Vercel function is working" });
-});
+// Optimization: Cached handler for serverless execution
+let cachedHandler: any;
 
-app.get("*", (req, res) => {
-    res.send("<h1>Vercel Deployment Debug</h1><p>The server is running, but the main app is not yet linked.</p>");
-});
+export default async function handler(req: any, res: any) {
+    if (!cachedHandler) {
+        // Ensure the Express app is fully initialized with routes
+        const app = await initializeApp();
 
-export default app;
+        // serverless-http bridges Express to the serverless environment
+        // Note: Vercel handles this natively, but serverless-http provides 
+        // a standard interface requested for this deployment.
+        cachedHandler = serverless(app);
+    }
+
+    // Handle the incoming request
+    return cachedHandler(req, res);
+}

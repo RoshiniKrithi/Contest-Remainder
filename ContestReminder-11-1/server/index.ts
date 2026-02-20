@@ -1,100 +1,22 @@
-import "dotenv/config";
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { initializeApp, app } from "./app";
+import { setupVite, log } from "./vite";
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+async function startLocalServer() {
+  const server = await initializeApp();
 
-// Diagnostic route for Vercel
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running on Vercel", time: new Date().toISOString() });
-});
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-// Setup global error handlers
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-// Initialize routes and server
-const initializeApp = (app: express.Express) => {
-  // Sync registration of auth and routes
-  registerRoutes(app);
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
-  });
-
-  if (process.env.NODE_ENV !== "development") {
-    serveStatic(app);
-  }
-};
-
-// Start the server if manually executed
-const startServer = async () => {
-  const server = await registerRoutes(app);
-
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development" || !process.env.NODE_ENV) {
     await setupVite(app, server);
-  } else {
-    serveStatic(app);
   }
 
   const port = parseInt(process.env.PORT || '5000', 10);
   const host = '127.0.0.1';
 
-  if (!process.env.VERCEL) {
-    server.listen(port, host, () => {
-      log(`Serving on port ${port}`);
-    });
-  }
-};
-
-if (!process.env.VERCEL) {
-  startServer().catch(err => {
-    console.error("Failed to start server:", err);
-    process.exit(1);
+  server.listen(port, host, () => {
+    log(`Local development server running on http://${host}:${port}`);
   });
-} else {
-  // On Vercel, initialize immediately
-  initializeApp(app);
 }
 
-export default app;
+startLocalServer().catch(err => {
+  console.error("Failed to start local server:", err);
+  process.exit(1);
+});
