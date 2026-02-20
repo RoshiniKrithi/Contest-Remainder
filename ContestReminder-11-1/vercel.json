@@ -2,21 +2,30 @@
     "version": 2,
     "buildCommand": "npm run build",
     "installCommand": "npm install",
+    "name": "contest-remainder",
     "functions": {
         "api/index.ts": {
             "memory": 1024,
-            "maxDuration": 20,
+            "maxDuration": 25,
             "includeFiles": "dist/public/**"
         }
     },
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/(.*)",
-            "destination": "/api/index.ts"
+            "src": "/api/health",
+            "dest": "/api/index.ts"
         },
         {
-            "source": "/(.*)",
-            "destination": "/api/index.ts"
+            "src": "/api/(.*)",
+            "dest": "/api/index.ts"
+        },
+        {
+            "src": "/assets/(.*)",
+            "dest": "/dist/public/assets/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/api/index.ts"
         }
     ],
     "env": {

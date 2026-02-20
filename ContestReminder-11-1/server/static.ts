@@ -14,20 +14,26 @@ export function log(message: string, source = "express") {
 }
 
 export function serveStatic(app: Express) {
-    let distPath = path.resolve(process.cwd(), "dist", "public");
+    // Try several potential locations for built assets in serverless environment
+    const possiblePaths = [
+        path.resolve(process.cwd(), "dist", "public"),
+        path.resolve(process.cwd(), "public"),
+        path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public"),
+        path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "dist", "public")
+    ];
 
-    // Fallback 1: Relative to this file (likely in server/)
-    if (!fs.existsSync(distPath)) {
-        distPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "public");
+    let distPath = "";
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            distPath = p;
+            break;
+        }
     }
 
-    // Fallback 2: Direct public folder
-    if (!fs.existsSync(distPath)) {
-        distPath = path.resolve(process.cwd(), "public");
-    }
-
-    if (!fs.existsSync(distPath)) {
-        console.warn(`⚠️ Warning: Static Assets NOT found. This might be an API-only deployment or build issue.`);
+    if (!distPath) {
+        console.error(`❌ Static Assets Error: Could not find build artifacts in any expected location.`);
+        console.log(`Debug - process.cwd(): ${process.cwd()}`);
+        console.log(`Checked paths: ${possiblePaths.join(", ")}`);
         return;
     }
 
@@ -39,10 +45,11 @@ export function serveStatic(app: Express) {
         if (req.path.startsWith("/api")) {
             return next();
         }
-        res.sendFile(path.resolve(distPath, "index.html"), (err) => {
-            if (err) {
-                res.status(404).send("Not found");
-            }
-        });
+        const indexPath = path.resolve(distPath, "index.html");
+        if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+        } else {
+            res.status(404).send("Frontend build not found - please check build logs.");
+        }
     });
 }
