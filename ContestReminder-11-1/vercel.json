@@ -2,7 +2,6 @@
     "version": 2,
     "buildCommand": "npm run build",
     "installCommand": "npm install",
-    "name": "contest-remainder",
     "functions": {
         "api/index.ts": {
             "memory": 1024,
@@ -21,7 +20,7 @@
         },
         {
             "src": "/assets/(.*)",
-            "dest": "/dist/public/assets/$1"
+            "dest": "/api/index.ts"
         },
         {
             "src": "/(.*)",
