@@ -131,16 +131,16 @@ export const userActivity = pgTable("user_activity", {
 });
 
 // Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const insertContestSchema = createInsertSchema(contests).omit({ id: true, participants: true });
-export const insertProblemSchema = createInsertSchema(problems).omit({ id: true });
-export const insertSubmissionSchema = createInsertSchema(submissions).omit({ id: true, submittedAt: true, score: true });
-export const insertLeaderboardSchema = createInsertSchema(leaderboard).omit({ id: true, rank: true });
-export const insertCourseSchema = createInsertSchema(courses).omit({ id: true, createdAt: true, students: true });
-export const insertLessonSchema = createInsertSchema(lessons).omit({ id: true, createdAt: true });
-export const insertEnrollmentSchema = createInsertSchema(enrollments).omit({ id: true, enrolledAt: true, lastAccessedAt: true });
-export const insertLessonProgressSchema = createInsertSchema(lessonProgress).omit({ id: true, lastAccessedAt: true });
-export const insertUserActivitySchema = createInsertSchema(userActivity).omit({ id: true });
+export const insertUserSchema = (createInsertSchema as any)(users).omit({ id: true });
+export const insertContestSchema = (createInsertSchema as any)(contests).omit({ id: true, participants: true });
+export const insertProblemSchema = (createInsertSchema as any)(problems).omit({ id: true });
+export const insertSubmissionSchema = (createInsertSchema as any)(submissions).omit({ id: true, submittedAt: true, score: true });
+export const insertLeaderboardSchema = (createInsertSchema as any)(leaderboard).omit({ id: true, rank: true });
+export const insertCourseSchema = (createInsertSchema as any)(courses).omit({ id: true, createdAt: true, students: true });
+export const insertLessonSchema = (createInsertSchema as any)(lessons).omit({ id: true, createdAt: true });
+export const insertEnrollmentSchema = (createInsertSchema as any)(enrollments).omit({ id: true, enrolledAt: true, lastAccessedAt: true });
+export const insertLessonProgressSchema = (createInsertSchema as any)(lessonProgress).omit({ id: true, lastAccessedAt: true });
+export const insertUserActivitySchema = (createInsertSchema as any)(userActivity).omit({ id: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -251,12 +251,12 @@ export const teaserAttempts = pgTable("teaser_attempts", {
 
 
 // Insert schemas for challenges
-export const insertTypingChallengeSchema = createInsertSchema(typingChallenges).omit({ id: true, createdAt: true });
-export const insertTypingScoreSchema = createInsertSchema(typingScores).omit({ id: true, completedAt: true });
-export const insertQuizQuestionSchema = createInsertSchema(quizQuestions).omit({ id: true, createdAt: true });
-export const insertQuizAttemptSchema = createInsertSchema(quizAttempts).omit({ id: true, completedAt: true });
-export const insertBrainTeaserSchema = createInsertSchema(brainTeasers).omit({ id: true, createdAt: true });
-export const insertTeaserAttemptSchema = createInsertSchema(teaserAttempts).omit({ id: true, attemptedAt: true });
+export const insertTypingChallengeSchema = (createInsertSchema as any)(typingChallenges).omit({ id: true, createdAt: true });
+export const insertTypingScoreSchema = (createInsertSchema as any)(typingScores).omit({ id: true, completedAt: true });
+export const insertQuizQuestionSchema = (createInsertSchema as any)(quizQuestions).omit({ id: true, createdAt: true });
+export const insertQuizAttemptSchema = (createInsertSchema as any)(quizAttempts).omit({ id: true, completedAt: true });
+export const insertBrainTeaserSchema = (createInsertSchema as any)(brainTeasers).omit({ id: true, createdAt: true });
+export const insertTeaserAttemptSchema = (createInsertSchema as any)(teaserAttempts).omit({ id: true, attemptedAt: true });
 
 // Types for challenges
 export type TypingChallenge = typeof typingChallenges.$inferSelect;

@@ -31,16 +31,18 @@ import {
   quizQuestions,
   quizAttempts,
   brainTeasers,
-  teaserAttempts
+  teaserAttempts,
+  type User as SelectUser
 } from "./shared/schema";
 import { randomUUID } from "crypto";
 import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+const createMemoryStore = require("memorystore");
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 
-const MemoryStore = createMemoryStore(session);
+const MemoryStore = (createMemoryStore as any)(session);
+
 import { db } from "./db";
 
 
@@ -403,11 +405,11 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser & { googleId?: string }): Promise<User> {
     const id = randomUUID();
     const user: User = {
-      ...insertUser,
+      ...(insertUser as any),
       id,
-      role: insertUser.username === "admin" ? "admin" : (insertUser.role || "user"),
+      role: (insertUser as any).username === "admin" ? "admin" : ((insertUser as any).role || "user"),
       streak: 0,
-      googleId: insertUser.googleId || null,
+      googleId: (insertUser as any).googleId || null,
       lastDailySolve: null,
     };
     this.users.set(id, user);
@@ -430,11 +432,11 @@ export class MemStorage implements IStorage {
   async createContest(insertContest: InsertContest): Promise<Contest> {
     const id = randomUUID();
     const contest: Contest = {
-      ...insertContest,
+      ...(insertContest as any),
       id,
       participants: 0,
-      status: insertContest.status || "upcoming",
-      description: insertContest.description || null
+      status: (insertContest as any).status || "upcoming",
+      description: (insertContest as any).description || null
     };
     this.contests.set(id, contest);
     return contest;
@@ -474,11 +476,11 @@ export class MemStorage implements IStorage {
   async createProblem(insertProblem: InsertProblem): Promise<Problem> {
     const id = randomUUID();
     const problem: Problem = {
-      ...insertProblem,
+      ...(insertProblem as any),
       id,
-      points: insertProblem.points || 100,
-      timeLimit: insertProblem.timeLimit || null,
-      memoryLimit: insertProblem.memoryLimit || null
+      points: (insertProblem as any).points || 100,
+      timeLimit: (insertProblem as any).timeLimit || null,
+      memoryLimit: (insertProblem as any).memoryLimit || null
     };
     this.problems.set(id, problem);
     return problem;
@@ -496,7 +498,7 @@ export class MemStorage implements IStorage {
   async createSubmission(insertSubmission: InsertSubmission): Promise<Submission> {
     const id = randomUUID();
     const submission: Submission = {
-      ...insertSubmission,
+      ...(insertSubmission as any),
       id,
       submittedAt: new Date(),
       score: 0,
@@ -531,15 +533,16 @@ export class MemStorage implements IStorage {
   async createCourse(insertCourse: InsertCourse): Promise<Course> {
     const id = randomUUID();
     const course: Course = {
-      ...insertCourse,
+      ...(insertCourse as any),
       id,
       students: 0,
       createdAt: new Date(),
-      isActive: insertCourse.isActive || true,
-      thumbnail: insertCourse.thumbnail || null,
-      prerequisites: insertCourse.prerequisites || null,
-      rating: insertCourse.rating || null
-    };
+      isActive: (insertCourse as any).isActive || true,
+      thumbnail: (insertCourse as any).thumbnail || null,
+      prerequisites: (insertCourse as any).prerequisites || null,
+      rating: (insertCourse as any).rating || null
+    } as any;
+
     this.courses.set(id, course);
     return course;
   }
@@ -568,15 +571,15 @@ export class MemStorage implements IStorage {
   async createLesson(insertLesson: InsertLesson): Promise<Lesson> {
     const id = randomUUID();
     const lesson: Lesson = {
-      ...insertLesson,
+      ...(insertLesson as any),
       id,
       createdAt: new Date(),
-      description: insertLesson.description || null,
-      isActive: insertLesson.isActive || true,
-      duration: insertLesson.duration || null,
-      videoUrl: insertLesson.videoUrl || null,
-      quizData: insertLesson.quizData || null,
-      type: insertLesson.type || "theory"
+      description: (insertLesson as any).description || null,
+      isActive: (insertLesson as any).isActive || true,
+      duration: (insertLesson as any).duration || null,
+      videoUrl: (insertLesson as any).videoUrl || null,
+      quizData: (insertLesson as any).quizData || null,
+      type: (insertLesson as any).type || "theory"
     };
     this.lessons.set(id, lesson);
     return lesson;
@@ -1900,7 +1903,7 @@ export class DatabaseStorage implements IStorage {
               type: (patch.updates as any).type || "video",
               quizData: patch.updates.quizData,
               isActive: true
-            });
+            } as any); // Added 'as any' here
           }
         } else {
           console.log(`📡 Intelligence Sync: Mission not found -> ${patch.title}`);
@@ -1967,10 +1970,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser & { googleId?: string }): Promise<User> {
-    const role = insertUser.username === "admin" ? "admin" : (insertUser.role || "user");
-    const result = await this.db.insert(users).values({ ...insertUser, role, googleId: insertUser.googleId || null }).returning();
+    const role = (insertUser as any).username === "admin" ? "admin" : ((insertUser as any).role || "user");
+    const result = await this.db.insert(users).values({ ...(insertUser as any), role, googleId: (insertUser as any).googleId || null } as any).returning();
     return result[0];
   }
+
 
   async getAllUsers(): Promise<User[]> {
     return await this.db.select().from(users);

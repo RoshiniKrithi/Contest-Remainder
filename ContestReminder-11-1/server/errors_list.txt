@@ -1,0 +1,62 @@
+﻿auth.ts(126,15): error TS2353: Object literal may only specify known properties, and 'username' does not exist in type '{} & { googleId?: string; }'.
+routes.ts(115,62): error TS2339: Property 'problemId' does not exist on type '{}'.
+routes.ts(123,57): error TS2339: Property 'userId' does not exist on type '{}'.
+routes.ts(131,62): error TS2339: Property 'userId' does not exist on type '{}'.
+routes.ts(153,57): error TS2339: Property 'userId' does not exist on type '{}'.
+shared/schema.ts(134,66): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(135,72): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(135,82): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(136,72): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(137,78): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(137,88): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(137,107): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(138,79): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(138,89): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(139,70): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(139,80): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(139,97): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(140,70): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(140,80): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(141,78): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(141,88): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(141,106): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(142,85): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(142,95): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(143,81): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(254,88): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(254,98): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(255,80): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(255,90): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(256,82): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(256,92): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(257,80): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(257,90): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(258,80): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(258,90): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(259,84): error TS2322: Type 'boolean' is not assignable to type 'never'.
+shared/schema.ts(259,94): error TS2322: Type 'boolean' is not assignable to type 'never'.
+storage.ts(405,11): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; role: any; streak: number; googleId: string; lastDailySolve: null; }' is missing the following properties from type '{ id: string; googleId: string; username: string; password: string; role: string; streak: number; lastDailySolve: Date; }': username, password
+storage.ts(408,24): error TS2339: Property 'username' does not exist on type '{} & { googleId?: string; }'.
+storage.ts(408,69): error TS2339: Property 'role' does not exist on type '{} & { googleId?: string; }'.
+storage.ts(432,11): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; participants: number; status: any; description: any; }' is missing the following properties from type '{ id: string; title: string; description: string; startTime: Date; endTime: Date; status: string; createdBy: string; participants: number; }': title, startTime, endTime, createdBy
+storage.ts(436,29): error TS2339: Property 'status' does not exist on type '{}'.
+storage.ts(437,34): error TS2339: Property 'description' does not exist on type '{}'.
+storage.ts(476,11): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; points: any; timeLimit: any; memoryLimit: any; }' is missing the following properties from type '{ id: string; title: string; description: string; contestId: string; difficulty: string; points: number; testCases: unknown; timeLimit: number; memoryLimit: number; }': title, description, contestId, difficulty, testCases
+storage.ts(479,29): error TS2339: Property 'points' does not exist on type '{}'.
+storage.ts(480,32): error TS2339: Property 'timeLimit' does not exist on type '{}'.
+storage.ts(481,34): error TS2339: Property 'memoryLimit' does not exist on type '{}'.
+storage.ts(498,11): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; submittedAt: Date; score: number; status: string; }' is missing the following properties from type '{ id: string; status: string; contestId: string; userId: string; problemId: string; code: string; language: string; score: number; submittedAt: Date; }': contestId, userId, problemId, code, language
+storage.ts(533,11): error TS2740: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; students: number; createdAt: Date; isActive: any; thumbnail: any; prerequisites: any; rating: any; }' is missing the following properties from type '{ id: string; title: string; description: string; difficulty: string; level: string; duration: string; topics: unknown; prerequisites: string; instructor: string; rating: number; students: number; price: string; thumbnail: string; isActive: boolean; createdAt: Date; }': title, description, difficulty, level, and 4 more.
+storage.ts(538,30): error TS2339: Property 'isActive' does not exist on type '{}'.
+storage.ts(539,31): error TS2339: Property 'thumbnail' does not exist on type '{}'.
+storage.ts(540,35): error TS2339: Property 'prerequisites' does not exist on type '{}'.
+storage.ts(541,28): error TS2339: Property 'rating' does not exist on type '{}'.
+storage.ts(570,11): error TS2739: Type '{ id: `${string}-${string}-${string}-${string}-${string}`; createdAt: Date; description: any; isActive: any; duration: any; videoUrl: any; quizData: any; type: any; }' is missing the following properties from type '{ id: string; title: string; description: string; duration: number; isActive: boolean; createdAt: Date; courseId: string; content: string; order: number; videoUrl: string; quizData: unknown; type: string; }': title, courseId, content, order
+storage.ts(574,33): error TS2339: Property 'description' does not exist on type '{}'.
+storage.ts(575,30): error TS2339: Property 'isActive' does not exist on type '{}'.
+storage.ts(576,30): error TS2339: Property 'duration' does not exist on type '{}'.
+storage.ts(577,30): error TS2339: Property 'videoUrl' does not exist on type '{}'.
+storage.ts(578,30): error TS2339: Property 'quizData' does not exist on type '{}'.
+storage.ts(579,26): error TS2339: Property 'type' does not exist on type '{}'.
+storage.ts(1970,29): error TS2339: Property 'username' does not exist on type '{} & { googleId?: string; }'.
+storage.ts(1970,74): error TS2339: Property 'role' does not exist on type '{} & { googleId?: string; }'.

@@ -1,15 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "node",
-    "outDir": "./dist",
+    "outDir": "dist",
     "rootDir": ".",
-    "baseUrl": ".",
-    "strict": true,
+    "module": "commonjs",
+    "target": "es2019",
     "esModuleInterop": true,
+    "strict": false,
+    "baseUrl": ".",
     "skipLibCheck": true,
-    "allowJs": true,
     "paths": {
       "@shared/*": ["./shared/*"]
     }

@@ -11,29 +11,15 @@ app.use(express.urlencoded({ extended: false }));
 
 // CORS setup for connecting Render backend to Vercel frontend
 app.use(cors({
-    origin: (origin, callback) => {
-        const allowedOrigins = [
-            "http://localhost:5173", // Local Vite
-            "http://localhost:5000", // Local Express
-            process.env.FRONTEND_URL, // Vercel URL
-        ].filter(Boolean);
-        
-        // Allow requests with no origin (like mobile apps or curl)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: process.env.FRONTEND_URL,
     credentials: true,
 }));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running", time: new Date().toISOString() });
+    res.json({ status: "ok", message: "Server is running" });
 });
+
 
 app.use((req, res, next) => {
     const start = Date.now();
