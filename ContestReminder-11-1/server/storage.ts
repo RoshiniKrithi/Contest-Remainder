@@ -32,7 +32,7 @@ import {
   quizAttempts,
   brainTeasers,
   teaserAttempts
-} from "@shared/schema";
+} from "./shared/schema";
 import { randomUUID } from "crypto";
 import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
 import session from "express-session";

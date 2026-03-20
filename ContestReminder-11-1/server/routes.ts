@@ -9,7 +9,7 @@ import {
   insertLessonSchema,
   insertEnrollmentSchema,
   insertLessonProgressSchema
-} from "@shared/schema";
+} from "./shared/schema";
 import { ContestService } from "./contest-apis";
 import { setupAuth } from "./auth";
 import type { Request, Response, NextFunction } from "express";

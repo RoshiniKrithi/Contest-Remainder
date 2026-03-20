@@ -2,46 +2,35 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./static";
+import { log } from "./log";
 
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // CORS setup for connecting Render backend to Vercel frontend
 app.use(cors({
-    origin: [
-        "http://localhost:5173", // Local Vite
-        "http://localhost:5000", // Local Express
-        process.env.FRONTEND_URL || "", // Vercel URL
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            "http://localhost:5173", // Local Vite
+            "http://localhost:5000", // Local Express
+            process.env.FRONTEND_URL, // Vercel URL
+        ].filter(Boolean);
+        
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 
-// Debug route to check files on Vercel
-app.get("/api/debug-files", async (req, res) => {
-    const fs = await import("fs");
-    const path = await import("path");
-    const { fileURLToPath } = await import("url");
-
-    const check = (p: string) => ({
-        path: p,
-        exists: fs.existsSync(p),
-        stats: fs.existsSync(p) ? (fs.lstatSync(p).isDirectory() ? "dir" : "file") : "missing"
-    });
-
-    res.json({
-        cwd: process.cwd(),
-        meta_url: import.meta.url,
-        checks: [
-            check(path.resolve(process.cwd(), "dist", "public")),
-            check(path.resolve(process.cwd(), "dist", "public", "index.html")),
-            check(path.resolve(process.cwd(), "public")),
-            check(path.resolve(process.cwd(), "client")),
-        ]
-    });
-});
-
+// Health check endpoint
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", message: "Server is running", time: new Date().toISOString() });
 });
@@ -83,11 +72,8 @@ export async function initializeApp() {
         res.status(status).json({ message });
     });
 
-    if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-        serveStatic(app);
-    }
-
     return httpServer;
 }
 
 export { app };
+
