@@ -1,5 +1,6 @@
 {
-  "devDependencies": {
-    "vite": "^8.0.1"
+  "scripts": {
+    "build": "cd ContestReminder-11-1/server && npm install && npm run build",
+    "start": "cd ContestReminder-11-1/server && npm run start"
   }
 }
