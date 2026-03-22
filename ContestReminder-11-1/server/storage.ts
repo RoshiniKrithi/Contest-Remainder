@@ -32,7 +32,10 @@ import {
   quizAttempts,
   brainTeasers,
   teaserAttempts,
-  type User as SelectUser
+  type User as SelectUser,
+  payments,
+  type Payment,
+  type InsertPayment
 } from "./shared/schema";
 import { randomUUID } from "crypto";
 import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
@@ -119,7 +122,10 @@ export interface IStorage {
   recordHintUsed(userId: string, teaserId: string): Promise<void>;
   getTeaserCalendar(userId: string): Promise<any[]>;
   getBrainTeaserStats(userId: string): Promise<any>;
-
+  // Payment operations
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getPaymentByOrderId(orderId: string): Promise<Payment | undefined>;
+  updatePayment(orderId: string, updates: Partial<Payment>): Promise<Payment | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -139,6 +145,7 @@ export class MemStorage implements IStorage {
   private quizAttempts: Map<string, any>;
   private brainTeasers: Map<string, any>;
   private brainTeaserSolutions: Map<string, any>;
+  private payments: Map<string, Payment>;
 
   constructor() {
     this.sessionStore = new MemoryStore({
@@ -159,6 +166,7 @@ export class MemStorage implements IStorage {
     this.quizAttempts = new Map();
     this.brainTeasers = new Map();
     this.brainTeaserSolutions = new Map();
+    this.payments = new Map();
     this.initializeSampleCourses();
     this.initializeSampleLessons();
     this.initializeSampleContests();
@@ -1480,6 +1488,34 @@ export class MemStorage implements IStorage {
     });
   }
 
+  // Payment operations
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const id = (Math.random() * 1000000).toString();
+    const newPayment: Payment = {
+      ...payment,
+      id,
+      status: payment.status || "pending",
+      createdAt: new Date(),
+      paymentId: payment.paymentId || null,
+      signature: payment.signature || null,
+    };
+    this.payments.set(newPayment.orderId, newPayment);
+    return newPayment;
+  }
+
+  async getPaymentByOrderId(orderId: string): Promise<Payment | undefined> {
+    return this.payments.get(orderId);
+  }
+
+  async updatePayment(orderId: string, updates: Partial<Payment>): Promise<Payment | undefined> {
+    const payment = this.payments.get(orderId);
+    if (payment) {
+      const updated = { ...payment, ...updates };
+      this.payments.set(orderId, updated);
+      return updated;
+    }
+    return undefined;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2445,6 +2481,25 @@ export class DatabaseStorage implements IStorage {
       totalAttempts: attempts.length,
       solved: attempts.filter((a: any) => a.solved).length,
     };
+  }
+
+  // Payment operations
+  async createPayment(payment: InsertPayment): Promise<Payment> {
+    const [newPayment] = await this.db.insert(payments).values(payment).returning();
+    return newPayment;
+  }
+
+  async getPaymentByOrderId(orderId: string): Promise<Payment | undefined> {
+    const [payment] = await this.db.select().from(payments).where(eq(payments.orderId, orderId)).limit(1);
+    return payment;
+  }
+
+  async updatePayment(orderId: string, updates: Partial<Payment>): Promise<Payment | undefined> {
+    const [updated] = await this.db.update(payments)
+      .set(updates)
+      .where(eq(payments.orderId, orderId))
+      .returning();
+    return updated;
   }
 }
 

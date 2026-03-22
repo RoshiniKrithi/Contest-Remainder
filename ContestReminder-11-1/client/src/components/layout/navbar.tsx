@@ -4,6 +4,8 @@ import { Code, Home, Globe, GraduationCap, Flame, Gamepad2 } from "lucide-react"
 import { UserDropdown } from "./user-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useRazorpay } from "@/hooks/use-razorpay";
+import { ShieldCheck } from "lucide-react";
 
 interface DailyChallengeData {
   problemId: string;
@@ -17,6 +19,7 @@ interface DailyChallengeData {
 export default function Navbar() {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+  const { initiatePayment, loading: isPaymentLoading } = useRazorpay();
 
   const isActive = (path: string) => {
     if (path === "/" && location === "/") return true;
@@ -100,6 +103,16 @@ export default function Navbar() {
                     {daily ? daily.streak : "-"}
                   </span>
                 </div>
+                
+                {/* Premium Upgrade Button */}
+                <Button
+                  onClick={() => initiatePayment(999)}
+                  disabled={isPaymentLoading}
+                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600 hover:to-indigo-600 border border-blue-500/20 hover:border-blue-400 text-blue-400 hover:text-white px-4 py-2 rounded-xl transition-all duration-500 shadow-lg hover:shadow-blue-500/40 font-black tracking-wider uppercase text-[10px]"
+                >
+                  <ShieldCheck className={`h-4 w-4 ${isPaymentLoading ? 'animate-pulse' : ''}`} />
+                  Upgrade
+                </Button>
 
                 <div className="h-8 w-[1px] bg-white/5 hidden sm:block" />
                 <UserDropdown />
