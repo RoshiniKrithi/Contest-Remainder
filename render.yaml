@@ -1,0 +1,37 @@
+services:
+  # BACKEND SERVICE
+  - type: web
+    name: contest-remainder-1
+    env: node
+    plan: free
+    rootDir: ContestReminder-11-1/server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://contest-remainder-frontend.onrender.com
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Requires manual entry in dashboard since it is sensitive
+
+  # FRONTEND STATIC SITE
+  - type: web
+    name: contest-remainder-frontend
+    env: static
+    plan: free
+    rootDir: ContestReminder-11-1
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://contest-remainder-1.onrender.com
+    # CRITICAL: React SPA Rewrite Rule to fix "Not Found" 404s
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
