@@ -18,9 +18,8 @@ services:
         sync: false # Requires manual entry in dashboard since it is sensitive
 
   # FRONTEND STATIC SITE
-  - type: web
+  - type: static
     name: contest-remainder-frontend
-    env: static
     plan: free
     rootDir: ContestReminder-11-1
     buildCommand: npm install && npm run build
