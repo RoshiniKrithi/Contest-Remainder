@@ -2,16 +2,19 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": ".",
-    "module": "commonjs",
-    "target": "es2019",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2022",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "strict": false,
     "baseUrl": ".",
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "paths": {
       "@shared/*": ["./shared/*"]
     }
   },
-  "include": ["**/*"],
+  "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

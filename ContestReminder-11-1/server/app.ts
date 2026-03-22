@@ -9,9 +9,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// CORS setup
+// CORS setup — allow configured frontend URL(s) + localhost dev
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    "http://localhost:5005",
+    "http://localhost:5173",
+].filter(Boolean) as string[];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5005",
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.some(o => origin.startsWith(o))) {
+            return callback(null, true);
+        }
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
 }));
 
