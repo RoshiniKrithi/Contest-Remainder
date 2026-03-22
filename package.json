@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "build": "cd ContestReminder-11-1/server && npm install && npm run build",
-    "start": "cd ContestReminder-11-1/server && npm run start"
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview"
   }
 }
