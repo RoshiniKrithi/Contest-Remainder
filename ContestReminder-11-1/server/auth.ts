@@ -37,11 +37,12 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
-    proxy: true, // Required for secure cookies on Render/Vercel
+    proxy: true,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
-      secure: isProd, // Must be true for SameSite: none
-      sameSite: isProd ? "none" : "lax", // Required for cross-domain cookies
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
     }
   };
 
