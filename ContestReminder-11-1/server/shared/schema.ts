@@ -250,17 +250,6 @@ export const teaserAttempts = pgTable("teaser_attempts", {
 });
 
 
-export const payments = pgTable("payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull(),
-  orderId: text("order_id").notNull(),
-  paymentId: text("payment_id"),
-  signature: text("signature"),
-  amount: integer("amount").notNull(), // Amount in paise
-  status: text("status").notNull().default("pending"), // pending, successful, failed
-  createdAt: timestamp("created_at").default(sql`now()`),
-});
-
 // Insert schemas for challenges
 export const insertTypingChallengeSchema = (createInsertSchema as any)(typingChallenges).omit({ id: true, createdAt: true });
 export const insertTypingScoreSchema = (createInsertSchema as any)(typingScores).omit({ id: true, completedAt: true });
@@ -268,7 +257,6 @@ export const insertQuizQuestionSchema = (createInsertSchema as any)(quizQuestion
 export const insertQuizAttemptSchema = (createInsertSchema as any)(quizAttempts).omit({ id: true, completedAt: true });
 export const insertBrainTeaserSchema = (createInsertSchema as any)(brainTeasers).omit({ id: true, createdAt: true });
 export const insertTeaserAttemptSchema = (createInsertSchema as any)(teaserAttempts).omit({ id: true, attemptedAt: true });
-export const insertPaymentSchema = (createInsertSchema as any)(payments).omit({ id: true, createdAt: true });
 
 // Types for challenges
 export type TypingChallenge = typeof typingChallenges.$inferSelect;
@@ -288,7 +276,4 @@ export type InsertBrainTeaser = z.infer<typeof insertBrainTeaserSchema>;
 
 export type TeaserAttempt = typeof teaserAttempts.$inferSelect;
 export type InsertTeaserAttempt = z.infer<typeof insertTeaserAttemptSchema>;
-
-export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 
