@@ -25,12 +25,12 @@
     "memoizee": "^0.4.17",
     "openid-client": "^6.7.1",
     "passport-google-oauth20": "^2.0.0",
-    "memorystore": "^1.6.7"
+    "memorystore": "^1.6.7",
+    "typescript": "5.6.3",
+    "tsx": "^4.19.1"
   },
 
   "devDependencies": {
-    "typescript": "5.6.3",
-    "tsx": "^4.19.1",
     "@types/express": "4.17.21",
     "@types/cors": "^2.8.19",
     "@types/node": "20.16.11",
