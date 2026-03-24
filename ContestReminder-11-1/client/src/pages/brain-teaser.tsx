@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { triggerConfetti } from "@/lib/confetti";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BrainTeaser {
     id: string;
@@ -56,13 +57,7 @@ export default function BrainTeaserPage() {
 
     const submitAnswer = useMutation({
         mutationFn: async (userAnswer: string) => {
-            const res = await fetch("/api/challenges/brain-teaser/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ teaserId: teaser?.id, answer: userAnswer }),
-            });
-            if (!res.ok) throw new Error(await res.text());
+            const res = await apiRequest("POST", "/api/challenges/brain-teaser/submit", { teaserId: teaser?.id, answer: userAnswer });
             return res.json();
         },
         onSuccess: (data) => {
@@ -88,13 +83,7 @@ export default function BrainTeaserPage() {
 
     const revealHint = useMutation({
         mutationFn: async () => {
-            const res = await fetch("/api/challenges/brain-teaser/hint", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ teaserId: teaser?.id }),
-            });
-            if (!res.ok) throw new Error(await res.text());
+            const res = await apiRequest("POST", "/api/challenges/brain-teaser/hint", { teaserId: teaser?.id });
             return res.json();
         },
         onSuccess: () => {

@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { triggerConfetti } from "@/lib/confetti";
+import { apiRequest } from "@/lib/queryClient";
 
 interface TypingChallenge {
     id: string;
@@ -48,13 +49,7 @@ export default function TypingChallengePage() {
 
     const submitScore = useMutation({
         mutationFn: async (data: { challengeId: string; wpm: number; accuracy: number; timeSpent: number }) => {
-            const res = await fetch("/api/challenges/typing/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error(await res.text());
+            const res = await apiRequest("POST", "/api/challenges/typing/submit", data);
             return res.json();
         },
         onSuccess: () => {

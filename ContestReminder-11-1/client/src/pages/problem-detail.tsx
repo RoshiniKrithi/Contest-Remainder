@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { ArrowLeft, Clock, Code, Trophy, Zap, Play, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
@@ -41,16 +41,12 @@ export default function ProblemDetail() {
 
     const submitMutation = useMutation({
         mutationFn: async () => {
-            const res = await fetch("/api/submissions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    problemId: id,
-                    userId: user?.id,
-                    code,
-                    language: "javascript",
-                    status: "pending", // Server will decide status
-                }),
+            const res = await apiRequest("POST", "/api/submissions", {
+                problemId: id,
+                userId: user?.id,
+                code,
+                language: "javascript",
+                status: "pending", // Server will decide status
             });
             if (!res.ok) throw new Error("Submission failed");
             return res.json();

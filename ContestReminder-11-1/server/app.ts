@@ -6,31 +6,46 @@ import { log } from "./log";
 
 const app = express();
 
+// Trust proxy is required for secure cookies on Render/Vercel
+app.set("trust proxy", 1);
+
+// Initialize CORS before any other middleware
+const ALLOWED_ORIGINS = [
+    "https://contest-remainder-cnk7.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
+const corsOptions: cors.CorsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        // Remove trailing slash for comparison
+        const sanitizedOrigin = origin.replace(/\/$/, "");
+        const isAllowed = ALLOWED_ORIGINS.some(allowed => 
+            allowed && allowed.replace(/\/$/, "") === sanitizedOrigin
+        );
+
+        if (isAllowed || process.env.NODE_ENV !== "production") {
+            callback(null, true);
+        } else {
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    credentials: true,
+    exposedHeaders: ["Set-Cookie"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-// CORS setup — allow configured frontend URL(s) + localhost dev
-const rawOrigins = (process.env.FRONTEND_URL || "")
-    .split(",")
-    .map(o => o.trim())
-    .filter(Boolean);
-
-const allowedOrigins = [
-    ...rawOrigins,
-    "http://localhost:5005",
-    "http://localhost:5173",
-];
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (curl, server-to-server, mobile)
-        if (!origin) return callback(null, true);
-        const allowed = allowedOrigins.some(o => origin === o || origin.startsWith(o.replace(/\/$/, "")));
-        if (allowed) return callback(null, true);
-        callback(new Error(`CORS: origin ${origin} not allowed`));
-    },
-    credentials: true,
-}));
 
 // Root check endpoint
 app.get("/", (req, res) => {

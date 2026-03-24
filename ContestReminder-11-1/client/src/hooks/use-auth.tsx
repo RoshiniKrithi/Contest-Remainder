@@ -5,7 +5,7 @@ import {
   UseMutationResult,
 } from "@tanstack/react-query";
 import { insertUserSchema, User as SelectUser, InsertUser } from "@shared/schema";
-import { apiRequest, queryClient, API_URL } from "../lib/queryClient";
+import { apiRequest, queryClient, API_URL, getQueryFn } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 type AuthContextType = {
@@ -30,37 +30,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/user`, {
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        return undefined;
-      }
-      if (!res.ok) {
-        throw new Error("Failed to fetch user");
-      }
-      return res.json();
-    },
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await fetch(`${API_URL}/api/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
-      });
-
-      if (res.status === 401) {
-        return null;
-      }
-
-      if (!res.ok) {
-        const text = (await res.text()) || res.statusText;
-        throw new Error(`${res.status}: ${text}`);
-      }
-
+      const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
     onSuccess: (user: SelectUser | null) => {
@@ -81,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Invalid username or password",
         variant: "destructive",
       });
     },
@@ -122,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: error.message || "Could not log out",
         variant: "destructive",
       });
     },

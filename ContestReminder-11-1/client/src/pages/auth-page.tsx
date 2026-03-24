@@ -89,7 +89,7 @@ export default function AuthPage() {
       <div className="absolute inset-0 z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 rounded-full blur-[140px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 rounded-full blur-[140px]" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] brightness-50 contrast-150 pointer-events-none mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-[0.15] brightness-50 contrast-150 pointer-events-none mix-blend-overlay" />
       </div>
 
       <motion.div
@@ -205,7 +205,7 @@ export default function AuthPage() {
                             placeholder="username_01"
                           />
                           {loginForm.formState.errors.username && (
-                            <p className="text-[10px] font-bold text-rose-500 ml-2">{loginForm.formState.errors.username.message}</p>
+                            <p className="text-[10px] font-bold text-rose-500 ml-2">{String(loginForm.formState.errors.username.message)}</p>
                           )}
                         </div>
 
@@ -218,7 +218,7 @@ export default function AuthPage() {
                             placeholder="••••••••"
                           />
                           {loginForm.formState.errors.password && (
-                            <p className="text-[10px] font-bold text-rose-500 ml-2">{loginForm.formState.errors.password.message}</p>
+                            <p className="text-[10px] font-bold text-rose-500 ml-2">{String(loginForm.formState.errors.password.message)}</p>
                           )}
                         </div>
 
@@ -288,7 +288,7 @@ export default function AuthPage() {
                             placeholder="operative_name"
                           />
                           {registerForm.formState.errors.username && (
-                            <p className="text-[10px] font-bold text-rose-500 ml-2">{registerForm.formState.errors.username.message}</p>
+                            <p className="text-[10px] font-bold text-rose-500 ml-2">{String(registerForm.formState.errors.username.message)}</p>
                           )}
                         </div>
 
@@ -301,7 +301,7 @@ export default function AuthPage() {
                             placeholder="Min 6 characters"
                           />
                           {registerForm.formState.errors.password && (
-                            <p className="text-[10px] font-bold text-rose-500 ml-2">{registerForm.formState.errors.password.message}</p>
+                            <p className="text-[10px] font-bold text-rose-500 ml-2">{String(registerForm.formState.errors.password.message)}</p>
                           )}
                         </div>
 

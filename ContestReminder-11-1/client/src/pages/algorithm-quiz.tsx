@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { triggerConfetti } from "@/lib/confetti";
+import { apiRequest } from "@/lib/queryClient";
 
 interface QuizQuestion {
     id: string;
@@ -50,13 +51,7 @@ export default function AlgorithmQuizPage() {
             topic: string;
             timeSpent: number;
         }) => {
-            const res = await fetch("/api/challenges/quiz/submit", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error(await res.text());
+            const res = await apiRequest("POST", "/api/challenges/quiz/submit", data);
             return res.json();
         },
         onSuccess: () => {
