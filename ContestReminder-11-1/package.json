@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "server:dev": "tsx server/index.ts",
-    "build": "vite build",
+    "build": "npm run build:server && vite build",
     "build:server": "tsc --project server/tsconfig.json && node -e \"require('fs').writeFileSync('server/dist/package.json', JSON.stringify({type:'commonjs'}))\"",
     "start": "node server/dist/index.js",
     "vercel-build": "vite build",
