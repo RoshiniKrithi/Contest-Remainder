@@ -37,6 +37,8 @@ const corsOptions: cors.CorsOptions = {
         if (isExplicitlyAllowed || isVercelPreview || process.env.NODE_ENV !== "production") {
             callback(null, true);
         } else {
+            // Log the blocked origin for easier debugging
+            console.warn(`[CORS BLOCKED] Origin: ${origin}`);
             callback(new Error(`Origin ${origin} not allowed by CORS`));
         }
     },
@@ -44,9 +46,11 @@ const corsOptions: cors.CorsOptions = {
     allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
     credentials: true,
     exposedHeaders: ["Set-Cookie"],
+    optionsSuccessStatus: 200, // Explicitly return 200 for preflight
 };
 
 app.use(cors(corsOptions));
+// Handle preflight for all endpoints
 app.options("*", cors(corsOptions));
 
 app.use(express.json());
