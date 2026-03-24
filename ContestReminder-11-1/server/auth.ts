@@ -140,9 +140,16 @@ export function setupAuth(app: Express) {
   }
 
   passport.serializeUser((user, done) => done(null, user.id));
+  // 2. DESERIALIZE: Handle deleted users safely
   passport.deserializeUser(async (id: string, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+    try {
+      const user = await storage.getUser(id);
+      // If user is not found, return false to Passport (don't crash)
+      done(null, user || false);
+    } catch (error) {
+      console.error("FATAL: Passport Deserialization Error:", error);
+      done(error);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
@@ -184,9 +191,23 @@ export function setupAuth(app: Express) {
     });
   });
 
+  // 3. SECURE /API/USER: Handle missing sessions without crashing
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    try {
+      // Passport adds isAuthenticated() and user to req
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ message: "Session active but user data missing" });
+      }
+
+      res.json(req.user);
+    } catch (error) {
+      console.error("CRITICAL: Internal Error in /api/user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // Google OAuth routes
