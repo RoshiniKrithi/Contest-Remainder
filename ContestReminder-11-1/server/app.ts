@@ -23,13 +23,18 @@ const corsOptions: cors.CorsOptions = {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        // Remove trailing slash for comparison
         const sanitizedOrigin = origin.replace(/\/$/, "");
-        const isAllowed = ALLOWED_ORIGINS.some(allowed => 
+        
+        // Check if origin is in the allowed list
+        const isExplicitlyAllowed = ALLOWED_ORIGINS.some(allowed => 
             allowed && allowed.replace(/\/$/, "") === sanitizedOrigin
         );
 
-        if (isAllowed || process.env.NODE_ENV !== "production") {
+        // Check if it's a Vercel preview URL (e.g. contest-remainder-cnk7-git-main-user.vercel.app)
+        const isVercelPreview = sanitizedOrigin.endsWith(".vercel.app") && 
+                               sanitizedOrigin.includes("contest-remainder-cnk7");
+
+        if (isExplicitlyAllowed || isVercelPreview || process.env.NODE_ENV !== "production") {
             callback(null, true);
         } else {
             callback(new Error(`Origin ${origin} not allowed by CORS`));
