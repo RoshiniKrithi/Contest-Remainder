@@ -3,12 +3,12 @@ import { initializeApp, app } from "./app";
 import { log } from "./log";
 
 async function startServer() {
-  await initializeApp();
+  const server = await initializeApp();
 
-  const PORT = process.env.PORT || 5000;
+  const PORT = Number(process.env.PORT) || 5000;
 
-  app.listen(PORT, () => {
-    log(`🚀 Server heart-beat detected on port ${PORT}`);
+  server.listen(PORT, "0.0.0.0", () => {
+    log(`🚀 Global server heart-beat detected on port ${PORT}`);
   });
 }
 
