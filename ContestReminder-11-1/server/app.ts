@@ -15,6 +15,8 @@ const ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:5173",
+    "http://localhost:5005",
+    "http://127.0.0.1:5005",
     process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
@@ -101,6 +103,12 @@ export async function initializeApp() {
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
         const status = err.status || err.statusCode || 500;
         const message = err.message || "Internal Server Error";
+        
+        // Log the error
+        import('./log').then(({ log }) => {
+            log(`[ERROR HANDLER] Status: ${status}, Message: ${message}, Stack: ${err.stack}`, 'error-handler');
+        });
+
         res.status(status).json({ message });
     });
 
