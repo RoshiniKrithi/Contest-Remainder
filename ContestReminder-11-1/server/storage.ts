@@ -990,6 +990,67 @@ export class MemStorage implements IStorage {
         price: "$149",
         thumbnail: null,
         isActive: true
+      },
+      // ── NEW DSA COURSES ──────────────────────────────────────
+      {
+        title: "Two Pointers & Sliding Window",
+        description: "Learn the two-pointer and sliding window techniques to solve array and string problems in optimal O(n) time — a must-know pattern for coding interviews.",
+        level: "beginner",
+        duration: "4 weeks",
+        difficulty: "medium",
+        topics: ["Two Pointer Pattern", "Sliding Window", "Array Problems", "String Manipulation", "Interview Prep"],
+        prerequisites: "Basic array knowledge in any programming language",
+        instructor: "Dr. Priya Nair",
+        rating: 4.9,
+        students: 870,
+        price: "Free",
+        thumbnail: null,
+        isActive: true
+      },
+      {
+        title: "Recursion & Backtracking Masterclass",
+        description: "Build deep intuition for recursive thinking and backtracking strategies. Covers permutations, combinations, N-Queens, Sudoku, and more.",
+        level: "intermediate",
+        duration: "6 weeks",
+        difficulty: "medium",
+        topics: ["Recursion Basics", "Call Stack", "Backtracking", "Permutations & Combinations", "Pruning Strategies"],
+        prerequisites: "Comfortable with loops and functions in any language",
+        instructor: "Prof. Arjun Sharma",
+        rating: 4.8,
+        students: 610,
+        price: "Free",
+        thumbnail: null,
+        isActive: true
+      },
+      {
+        title: "Dynamic Programming Patterns",
+        description: "Crack DP once and for all! Master the 7 core patterns — 1D DP, 2D DP, Knapsack, Longest Subsequences, Matrix DP, Intervals, and Digit DP — with worked examples.",
+        level: "intermediate",
+        duration: "8 weeks",
+        difficulty: "hard",
+        topics: ["1D & 2D DP", "Knapsack Problem", "LCS & LIS", "Matrix DP", "Interval DP"],
+        prerequisites: "Knowledge of recursion and arrays",
+        instructor: "Dr. Elena Vasquez",
+        rating: 4.9,
+        students: 520,
+        price: "$49",
+        thumbnail: null,
+        isActive: true
+      },
+      {
+        title: "Trees & Binary Search Trees",
+        description: "Thorough course on trees — from representation to traversals, BST operations, AVL balancing, and common interview problem patterns on tree structures.",
+        level: "beginner",
+        duration: "5 weeks",
+        difficulty: "medium",
+        topics: ["Tree Representation", "DFS & BFS Traversals", "BST Insert/Delete/Search", "Balanced Trees", "LCA & Tree DP"],
+        prerequisites: "Basic recursion and linked list understanding",
+        instructor: "Prof. Michael Rodriguez",
+        rating: 4.9,
+        students: 740,
+        price: "Free",
+        thumbnail: null,
+        isActive: true
       }
     ];
 
@@ -1437,6 +1498,475 @@ export class MemStorage implements IStorage {
               {
                 question: "What is the primary reason to use Database Sharding?",
                 options: ["To backup data", "To improve security", "To distribute data and load across multiple servers", "To normalize the schema"],
+                correctAnswerIndex: 2
+              }
+            ]
+          }
+        ];
+      }
+
+      // ── NEW COURSE LESSONS ────────────────────────────────────
+      else if (course.title.includes("Two Pointers & Sliding Window")) {
+        lessons = [
+          {
+            courseId,
+            title: "Intro to Two Pointers Pattern",
+            description: "Understand when and why to use the two-pointer approach.",
+            content: "The two-pointer technique uses two indices that move through an array simultaneously to reduce time complexity from O(n²) to O(n). It works best on sorted arrays and problems involving pairs.",
+            order: 1,
+            duration: 20,
+            videoUrl: "https://www.youtube.com/embed/On3r4I1p4G0",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which precondition often makes the two-pointer approach most effective?",
+                options: ["The array must be unsorted", "The array must be sorted", "The array must have duplicates", "The array must be circular"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "What is the time complexity of finding a pair with a target sum using two pointers on a sorted array?",
+                options: ["O(n²)", "O(n log n)", "O(n)", "O(1)"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Sliding Window Fundamentals",
+            description: "Learn fixed and variable-size sliding window techniques.",
+            content: "The sliding window pattern maintains a contiguous subarray of elements and slides it across the input. Used to find max/min subarrays, longest substrings with constraints, and more.",
+            order: 2,
+            duration: 25,
+            videoUrl: "https://www.youtube.com/embed/p-ss2JNynmw",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the time complexity of the sliding window approach for 'Maximum Sum Subarray of Size K'?",
+                options: ["O(n²)", "O(n log n)", "O(n)", "O(k)"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "Sliding window is most useful when the problem involves:",
+                options: ["Entire array at once", "Non-contiguous elements", "A contiguous subarray or substring", "Sorting elements"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Classic Problems: Longest Substrings",
+            description: "Solve 'Longest Substring Without Repeating Characters' and similar problems.",
+            content: "Using a HashMap with a sliding window, we track character frequencies and shrink the window when a constraint is violated. This pattern solves some of the most frequent interview problems.",
+            order: 3,
+            duration: 30,
+            videoUrl: "https://www.youtube.com/embed/wiGpQwVHdE0",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In the 'Longest Substring Without Repeating Characters' problem, which data structure tracks seen characters?",
+                options: ["Stack", "Queue", "HashMap / Set", "Array sorted by character"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Two Pointer: Container With Most Water",
+            description: "Solve the classic container problem using shrinking window.",
+            content: "We start with two pointers at both ends and move the shorter side inward to maximize area. This greedy insight, combined with two pointers, gives us an elegant O(n) solution.",
+            order: 4,
+            duration: 22,
+            videoUrl: "https://www.youtube.com/embed/UuiTKBwPgAo",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In 'Container With Most Water', why do we move the pointer pointing to the shorter line?",
+                options: ["Because it causes overflow", "Because the taller side can never limit area more", "Random choice", "To avoid revisiting elements"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Two Pointers & Sliding Window",
+            description: "Final quiz to validate your mastery of both techniques.",
+            content: "Apply your knowledge of two pointers and sliding window patterns. Choose the most efficient technique for each scenario.",
+            order: 5,
+            duration: 15,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which pattern is best for 'Find all subarrays with product less than K'?",
+                options: ["Brute Force O(n²)", "Sorting", "Sliding Window with two pointers", "Binary Search"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "What is the key difference between a fixed-size and variable-size sliding window?",
+                options: ["Fixed size never shrinks; variable size expands/shrinks based on a condition", "Fixed size is always faster", "Variable size always uses a stack", "There is no difference"],
+                correctAnswerIndex: 0
+              }
+            ]
+          }
+        ];
+      }
+
+      else if (course.title.includes("Recursion & Backtracking")) {
+        lessons = [
+          {
+            courseId,
+            title: "Recursion Fundamentals & the Call Stack",
+            description: "Build a mental model of recursive function calls.",
+            content: "Every recursive function has two parts: a base case (stopping condition) and a recursive call that simplifies the problem. The call stack stores each function frame until the base case is reached.",
+            order: 1,
+            duration: 28,
+            videoUrl: "https://www.youtube.com/embed/IJDJ0kBx2LM",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What causes a 'Stack Overflow' error in a recursive function?",
+                options: ["Using too many variables", "Missing or incorrect base case causing infinite recursion", "Returning a wrong value", "Using recursion for sorting"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "The base case in recursion is responsible for:",
+                options: ["Making recursive calls", "Stopping the recursion", "Initializing variables", "Increasing the call stack depth"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Generating Permutations & Combinations",
+            description: "Use recursion to generate all possible arrangements.",
+            content: "Permutations and combinations are foundational backtracking problems. We build candidates incrementally and abandon candidates (backtrack) as soon as they violate constraints.",
+            order: 2,
+            duration: 35,
+            videoUrl: "https://www.youtube.com/embed/s7AvT7cGdSo",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "How many permutations exist for the string 'ABC'?",
+                options: ["3", "6", "9", "8"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "In backtracking, 'pruning' means:",
+                options: ["Sorting the input", "Skipping branches that cannot lead to a valid solution", "Adding more recursive calls", "Removing base cases"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "N-Queens & Sudoku Solver",
+            description: "Solve constraint satisfaction problems with backtracking.",
+            content: "Place N queens on an N×N chessboard such that no two queens attack each other. We use row-by-row placement with column, diagonal, and anti-diagonal checks to prune invalid states early.",
+            order: 3,
+            duration: 40,
+            videoUrl: "https://www.youtube.com/embed/Ph95IHmRp5M",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In the N-Queens problem, what constraint must hold for any two queens?",
+                options: ["Same row", "Same column", "No two queens attack each other (row, col, diagonal)", "All must be in corners"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Subset Sum & Word Search",
+            description: "Apply backtracking to find subsets and paths.",
+            content: "Subset sum asks: 'Can we find a subset that adds up to a target?' We try including or excluding each element. Word Search on a grid uses DFS + backtracking with visited tracking.",
+            order: 4,
+            duration: 32,
+            videoUrl: "https://www.youtube.com/embed/pfiQ_PS1g8E",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In the Subset Sum problem using backtracking, what is the maximum number of subsets you might explore?",
+                options: ["O(n)", "O(n²)", "O(2^n)", "O(n!)"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Recursion & Backtracking",
+            description: "Validate your recursive and backtracking problem-solving skills.",
+            content: "Synthesize your understanding of recursion, backtracking, and constraint satisfaction. Choose the optimal approach for each problem type.",
+            order: 5,
+            duration: 20,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which problem is best solved using Backtracking?",
+                options: ["Finding max in an array", "Binary search", "Generating all valid parentheses", "Computing prefix sum"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "What is the time complexity of generating all permutations of an n-element set?",
+                options: ["O(n)", "O(n²)", "O(n log n)", "O(n!)"],
+                correctAnswerIndex: 3
+              }
+            ]
+          }
+        ];
+      }
+
+      else if (course.title.includes("Dynamic Programming Patterns")) {
+        lessons = [
+          {
+            courseId,
+            title: "DP Fundamentals: Memoization vs Tabulation",
+            description: "Understand top-down and bottom-up DP approaches.",
+            content: "Memoization (top-down) uses recursion with a cache. Tabulation (bottom-up) fills a table iteratively. Both eliminate redundant sub-computations. We compare them on Fibonacci and Climbing Stairs.",
+            order: 1,
+            duration: 35,
+            videoUrl: "https://www.youtube.com/embed/oBt53YbR9Kk",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which DP technique fills a table from the smallest subproblems up?",
+                options: ["Memoization (top-down)", "Tabulation (bottom-up)", "Divide & Conquer", "Greedy"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "Dynamic Programming is applicable when a problem has:",
+                options: ["Only one solution", "Overlapping subproblems and optimal substructure", "Random input", "Sorted data always"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Knapsack Problem (0/1 & Unbounded)",
+            description: "Master item selection under weight constraints.",
+            content: "The 0/1 Knapsack asks: given items with weights and values, maximize value without exceeding capacity. We build a 2D DP table where dp[i][w] = max value using first i items and capacity w.",
+            order: 2,
+            duration: 40,
+            videoUrl: "https://www.youtube.com/embed/nLmhmB6NzcM",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In 0/1 Knapsack DP, what does dp[i][w] represent?",
+                options: ["Max items fitted in weight w", "Max value using first i items with capacity w", "Remaining capacity after i items", "Index of selected item i"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "What is the time complexity of the standard 0/1 Knapsack DP solution (n items, W capacity)?",
+                options: ["O(n)", "O(n + W)", "O(n × W)", "O(2^n)"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Longest Common Subsequence (LCS) & LIS",
+            description: "Solve classic subsequence DP problems.",
+            content: "LCS finds the longest sequence common to two strings. LIS (Longest Increasing Subsequence) finds the longest strictly increasing subsequence in an array. Both use 2D and 1D DP tables respectively.",
+            order: 3,
+            duration: 38,
+            videoUrl: "https://www.youtube.com/embed/NnD96abizww",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the time complexity of the standard LCS DP algorithm for strings of length m and n?",
+                options: ["O(m + n)", "O(m × n)", "O((m + n) log n)", "O(2^n)"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "The LIS problem can be solved in O(n log n) using:",
+                options: ["Simple 1D DP only", "Sorting + DP", "Binary Search + Patience Sorting", "BFS"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Matrix DP & Coin Change",
+            description: "Apply DP on grids and unbounded item selection.",
+            content: "Matrix DP problems like 'Unique Paths' and 'Minimum Path Sum' fill a grid based on adjacent cells. Coin Change is an unbounded knapsack variant — we can reuse coins with no restriction.",
+            order: 4,
+            duration: 33,
+            videoUrl: "https://www.youtube.com/embed/H9bfqozjoqs",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "In 'Coin Change' (minimum coins for amount), what base case initializes the DP array?",
+                options: ["dp[0] = 1", "dp[0] = 0", "dp[0] = infinity", "dp[amount] = 0"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: DP Patterns Mastery",
+            description: "Final test on all core dynamic programming patterns.",
+            content: "Prove mastery over memoization, knapsack, LCS, LIS, and matrix DP. Identify the correct pattern for each problem scenario.",
+            order: 5,
+            duration: 20,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which DP pattern applies to 'Edit Distance' (Levenshtein distance)?",
+                options: ["1D DP", "2D DP (LCS-style)", "Knapsack", "Matrix path DP"],
+                correctAnswerIndex: 1
+              },
+              {
+                question: "If a DP problem requires choosing multiple items with repetition, it is classified as:",
+                options: ["0/1 Knapsack", "Unbounded Knapsack", "LCS Problem", "Matrix DP"],
+                correctAnswerIndex: 1
+              }
+            ]
+          }
+        ];
+      }
+
+      else if (course.title.includes("Trees & Binary Search Trees")) {
+        lessons = [
+          {
+            courseId,
+            title: "Tree Representation & Terminology",
+            description: "Understand nodes, edges, height, depth, and tree types.",
+            content: "A tree is a hierarchical data structure with a root node and child subtrees. Key terms: root, leaf, height (longest path to leaf), depth (path from root). A Binary Tree has at most 2 children per node.",
+            order: 1,
+            duration: 25,
+            videoUrl: "https://www.youtube.com/embed/oSWTXtMglKE",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "What is the height of a tree with only a root node?",
+                options: ["0", "1", "-1", "Undefined"],
+                correctAnswerIndex: 0
+              },
+              {
+                question: "A leaf node in a tree is a node that has:",
+                options: ["No parent", "No children", "Exactly one child", "Two children"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "DFS Traversals: Inorder, Preorder, Postorder",
+            description: "Master all three depth-first traversal orders.",
+            content: "Inorder (Left-Root-Right) gives sorted output for a BST. Preorder (Root-Left-Right) is used for copying/serializing trees. Postorder (Left-Right-Root) is used for deletion and expression evaluation.",
+            order: 2,
+            duration: 30,
+            videoUrl: "https://www.youtube.com/embed/WLvU5EQVZqY",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Inorder traversal of a Binary Search Tree gives elements in:",
+                options: ["Random order", "Descending order", "Ascending (sorted) order", "Level-order"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "Which traversal visits the root BEFORE its children?",
+                options: ["Inorder", "Postorder", "Preorder", "Level-order"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "BFS Level-Order Traversal",
+            description: "Traverse trees level by level using a queue.",
+            content: "Level-order traversal visits all nodes at the same depth before going deeper. It uses a Queue: enqueue root, then for each dequeued node enqueue its children. Used for zigzag traversal, right-side view, etc.",
+            order: 3,
+            duration: 22,
+            videoUrl: "https://www.youtube.com/embed/86g8jAQug04",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "Which data structure is used to implement BFS (level-order) traversal of a tree?",
+                options: ["Stack", "Queue", "HashMap", "Array"],
+                correctAnswerIndex: 1
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Binary Search Tree: Insert, Delete, Search",
+            description: "Implement and analyze all core BST operations.",
+            content: "A BST maintains the property: all left descendants < node < all right descendants. Search, Insert are O(h). Delete has 3 cases: no child, one child, two children (replace with inorder successor).",
+            order: 4,
+            duration: 35,
+            videoUrl: "https://www.youtube.com/embed/gcULXE7ViZw",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "When deleting a node with TWO children from a BST, which node replaces it?",
+                options: ["The root", "The leftmost node", "The inorder successor (smallest in right subtree)", "A random node"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "What is the average time complexity of Search in a balanced BST?",
+                options: ["O(1)", "O(n)", "O(log n)", "O(n log n)"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Common Tree Interview Problems",
+            description: "Solve LCA, diameter, max depth, and path sum.",
+            content: "Key interview problems: Maximum Depth (DFS returning height), Diameter (max of left+right height per node), Lowest Common Ancestor (LCA), Path Sum (DFS subtracting target). All use DFS recursion.",
+            order: 5,
+            duration: 40,
+            videoUrl: "https://www.youtube.com/embed/4r_A2fmasZo",
+            type: "video",
+            isActive: true,
+            quizData: [
+              {
+                question: "The diameter of a binary tree is defined as:",
+                options: ["The height of the tree", "The number of nodes", "The longest path between any two nodes", "The width at the widest level"],
+                correctAnswerIndex: 2
+              }
+            ]
+          },
+          {
+            courseId,
+            title: "Assessment: Trees & BST Mastery",
+            description: "Final evaluation covering all tree concepts and operations.",
+            content: "Demonstrate your mastery of tree traversals, BST operations, and common tree problem patterns.",
+            order: 6,
+            duration: 20,
+            videoUrl: null,
+            type: "quiz",
+            isActive: true,
+            quizData: [
+              {
+                question: "To check if a Binary Tree is a valid BST, which traversal should produce a sorted sequence?",
+                options: ["Preorder", "Postorder", "Inorder", "Level-order"],
+                correctAnswerIndex: 2
+              },
+              {
+                question: "The worst-case time complexity of BST operations on an unbalanced BST is:",
+                options: ["O(log n)", "O(1)", "O(n)", "O(n log n)"],
                 correctAnswerIndex: 2
               }
             ]
