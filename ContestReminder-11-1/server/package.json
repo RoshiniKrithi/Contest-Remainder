@@ -40,5 +40,5 @@
     "@types/pg": "^8.11.0",
     "@types/ws": "^8.5.13"
   },
-  "devDependencies": {},
+  "devDependencies": {}
 }
