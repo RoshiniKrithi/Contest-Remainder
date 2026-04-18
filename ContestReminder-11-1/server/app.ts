@@ -22,8 +22,10 @@ const ALLOWED_ORIGINS = [
 
 const corsOptions: cors.CorsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+        // Broaden allowed origins for easier development
+        if (!origin || process.env.NODE_ENV !== "production") {
+            return callback(null, true);
+        }
         
         const sanitizedOrigin = origin.replace(/\/$/, "");
         
@@ -32,25 +34,24 @@ const corsOptions: cors.CorsOptions = {
             allowed && allowed.replace(/\/$/, "") === sanitizedOrigin
         );
 
-        // Check if it's a Vercel preview URL (e.g. contest-remainder-cnk7-git-main-user.vercel.app)
+        // Check if it's a Vercel preview URL
         const isVercelPreview = sanitizedOrigin.endsWith(".vercel.app") && 
-                               sanitizedOrigin.includes("contest-remainder-cnk7");
+                               sanitizedOrigin.includes("contest-remainder");
                                
         const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(sanitizedOrigin);
 
-        if (isExplicitlyAllowed || isVercelPreview || isLocalhost || process.env.NODE_ENV !== "production") {
+        if (isExplicitlyAllowed || isVercelPreview || isLocalhost) {
             callback(null, true);
         } else {
-            // Log the blocked origin for easier debugging
-            console.warn(`[CORS BLOCKED] Origin: ${origin}`);
+            console.error(`[CORS REJECTED] Origin: ${origin}`);
             callback(new Error(`Origin ${origin} not allowed by CORS`));
         }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin"],
     credentials: true,
     exposedHeaders: ["Set-Cookie"],
-    optionsSuccessStatus: 200, // Explicitly return 200 for preflight
+    optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -106,7 +107,10 @@ export async function initializeApp() {
         const status = err.status || err.statusCode || 500;
         const message = err.message || "Internal Server Error";
         
-        // Log the error
+        // Detailed error logging
+        console.error(`🔴 [FATAL ERROR] ${status} - ${message}`);
+        if (err.stack) console.error(err.stack);
+
         import('./log').then(({ log }) => {
             log(`[ERROR HANDLER] Status: ${status}, Message: ${message}, Stack: ${err.stack}`, 'error-handler');
         });

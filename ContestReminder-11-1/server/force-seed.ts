@@ -29,7 +29,7 @@ async function run() {
          thumbnail: course.thumbnail,
          isActive: course.isActive,
          createdAt: course.createdAt
-       });
+       } as any);
        console.log("Inserted course:", course.title);
     } else {
        dbCourseId = existing[0].id;
@@ -53,7 +53,7 @@ async function run() {
              quizData: lesson.quizData as any,
              isActive: lesson.isActive,
              createdAt: lesson.createdAt
-           });
+           } as any);
            console.log("Inserted lesson:", lesson.title);
          } catch (e) {
            console.error("Failed to insert lesson:", lesson.title, e);

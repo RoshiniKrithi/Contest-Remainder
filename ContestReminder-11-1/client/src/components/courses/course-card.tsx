@@ -19,11 +19,11 @@ export default function CourseCard({ course }: CourseCardProps) {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
-  const userId = user?.id || "demo-user-123";
-
+  const userId = user?.id;
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
     queryKey: ["/api/users", userId, "courses", course.id, "enrollment"],
     retry: false,
+    enabled: !!userId,
   });
 
   const enrollMutation = useMutation({

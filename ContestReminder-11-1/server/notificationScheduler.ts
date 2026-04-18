@@ -45,7 +45,7 @@ async function checkAndNotify() {
         // Mark as notified so we never send twice
         await db
           .update(contests)
-          .set({ notified: true })
+          .set({ notified: true } as any)
           .where(eq(contests.id, contest.id));
       }
     }

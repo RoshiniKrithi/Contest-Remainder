@@ -59,7 +59,7 @@ export default function CourseDetail() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const userId = user?.id || "demo-user-123";
+  const userId = user?.id;
 
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery<Course>({
     queryKey: ["/api/courses", id],
@@ -73,7 +73,7 @@ export default function CourseDetail() {
   const { data: enrollment } = useQuery<Enrollment>({
     queryKey: ["/api/users", userId, "courses", id, "enrollment"],
     retry: false,
-    enabled: !!id,
+    enabled: !!id && !!userId,
   });
 
   const enrollMutation = useMutation({

@@ -46,7 +46,7 @@ import connectPgSimple from "connect-pg-simple";
 
 const MemoryStore = (createMemoryStore as any)(session);
 
-import { db } from "./db";
+import { db, pool } from "./db";
 
 
 export interface IStorage {
@@ -70,11 +70,11 @@ export interface IStorage {
   getContest(id: string): Promise<Contest | undefined>;
   getAllContests(): Promise<Contest[]>;
   updateContestStatus(id: string, status: string): Promise<Contest | undefined>;
-  async updateContestParticipants(id: string, participants: number): Promise<Contest | undefined>;
+  updateContestParticipants(id: string, participants: number): Promise<Contest | undefined>;
 
   // Bookmark operations
-  getBookmarks(userId: string): Promise<any[]>;
-  createBookmark(userId: string, contestId: string): Promise<any>;
+  getBookmarks(userId: string): Promise<Bookmark[]>;
+  createBookmark(userId: string, contestId: string): Promise<Bookmark>;
   deleteBookmark(userId: string, contestId: string): Promise<void>;
 
   // Problem operations
@@ -147,6 +147,7 @@ export class MemStorage implements IStorage {
   private quizAttempts: Map<string, any>;
   private brainTeasers: Map<string, any>;
   private brainTeaserSolutions: Map<string, any>;
+  private bookmarks: Map<string, Bookmark>;
 
   constructor() {
     this.sessionStore = new MemoryStore({
@@ -167,6 +168,7 @@ export class MemStorage implements IStorage {
     this.quizAttempts = new Map();
     this.brainTeasers = new Map();
     this.brainTeaserSolutions = new Map();
+    this.bookmarks = new Map();
     this.initializeSampleCourses();
     this.initializeSampleLessons();
     this.initializeSampleContests();
@@ -183,15 +185,25 @@ export class MemStorage implements IStorage {
   private async initializeSampleContests() {
     // Create a sample contest
     const contestId = randomUUID();
+    const startTime = new Date();
+    const endTime = new Date(Date.now() + 86400000 * 365); // 1 year duration
+    const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
     const contest: Contest = {
       id: contestId,
       title: "Daily Coding Challenge",
       description: "Daily algorithmic challenges to test your skills.",
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 86400000 * 365), // 1 year duration
+      platform: "System",
+      url: null,
+      startTime,
+      endTime,
+      duration,
       status: "live",
+      externalId: null,
       participants: 0,
-      createdBy: "system"
+      createdBy: "system",
+      lastUpdated: new Date(),
+      notified: false
     };
     this.contests.set(contestId, contest);
 
@@ -439,15 +451,53 @@ export class MemStorage implements IStorage {
   // Contest operations
   async createContest(insertContest: InsertContest): Promise<Contest> {
     const id = randomUUID();
+    const startTime = new Date(insertContest.startTime);
+    const endTime = new Date(insertContest.endTime);
+    const computedDuration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
     const contest: Contest = {
-      ...(insertContest as any),
       id,
+      title: insertContest.title,
+      description: insertContest.description ?? null,
+      platform: insertContest.platform ?? "System",
+      url: insertContest.url ?? null,
+      startTime,
+      endTime,
+      duration: insertContest.duration || computedDuration,
+      status: insertContest.status || "upcoming",
+      externalId: insertContest.externalId ?? null,
       participants: 0,
-      status: (insertContest as any).status || "upcoming",
-      description: (insertContest as any).description || null
+      createdBy: "system",
+      lastUpdated: new Date(),
+      notified: insertContest.notified ?? false
     };
     this.contests.set(id, contest);
     return contest;
+  }
+
+  async getBookmarks(userId: string): Promise<Bookmark[]> {
+    return Array.from(this.bookmarks.values()).filter(b => b.userId === userId);
+  }
+
+  async createBookmark(userId: string, contestId: string): Promise<Bookmark> {
+    const id = randomUUID();
+    const bookmark: Bookmark = {
+      id,
+      userId,
+      contestId,
+      createdAt: new Date()
+    };
+    this.bookmarks.set(id, bookmark);
+    return bookmark;
+  }
+
+  async deleteBookmark(userId: string, contestId: string): Promise<void> {
+    const bookmark = Array.from(this.bookmarks.values()).find(
+      b => b.userId === userId && b.contestId === contestId
+    );
+    if (bookmark) {
+      this.bookmarks.delete(bookmark.id);
+    }
   }
 
   async getContest(id: string): Promise<Contest | undefined> {
@@ -2029,10 +2079,9 @@ export class DatabaseStorage implements IStorage {
 
     const PgStore = connectPgSimple(session);
     this.sessionStore = new PgStore({
-      conObject: {
-        connectionString: process.env.DATABASE_URL!,
-      },
+      pool: pool,
       tableName: 'session',
+      createTableIfMissing: true
     });
     this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
     this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));
@@ -2509,7 +2558,13 @@ export class DatabaseStorage implements IStorage {
 
   async createUser(insertUser: InsertUser & { googleId?: string }): Promise<User> {
     const role = (insertUser as any).username === "admin" ? "admin" : ((insertUser as any).role || "user");
-    const result = await this.db.insert(users).values({ ...(insertUser as any), role, googleId: (insertUser as any).googleId || null } as any).returning();
+    const insertData = { 
+      ...insertUser, 
+      role, 
+      googleId: insertUser.googleId || null 
+    };
+    
+    const result = await this.db.insert(users).values(insertData as any).returning();
     return result[0];
   }
 
@@ -2566,7 +2621,16 @@ export class DatabaseStorage implements IStorage {
 
   // Contest operations
   async createContest(insertContest: InsertContest): Promise<Contest> {
-    const result = await this.db.insert(contests).values(insertContest).returning();
+    const startTime = new Date(insertContest.startTime);
+    const endTime = new Date(insertContest.endTime);
+    const computedDuration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
+    const result = await this.db.insert(contests).values({
+      ...insertContest,
+      duration: insertContest.duration || computedDuration,
+      lastUpdated: new Date(),
+      notified: insertContest.notified ?? false
+    }).returning();
     return result[0];
   }
 
