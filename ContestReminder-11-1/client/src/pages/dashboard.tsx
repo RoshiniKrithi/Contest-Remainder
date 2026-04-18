@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, MotionCard } from "@/components/ui/card";
-import { Trophy, Users, Code, Bell, ExternalLink, Clock, Calendar, Zap, Activity } from "lucide-react";
+import { Trophy, Code, Bell, ExternalLink, Clock, Calendar, Zap, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,10 +25,11 @@ export default function Dashboard() {
   });
 
   const { data: contests, isLoading: contestsLoading } = useQuery({
-    queryKey: ["/api/external-contests"],
+    queryKey: ["/api/contests/all"],
+    refetchInterval: 60000,
   });
 
-  const liveContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "live") : [];
+  const liveContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "ongoing") : [];
   const upcomingContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "upcoming").slice(0, 5) : [];
 
   const containerVariants = {
@@ -78,7 +79,7 @@ export default function Dashboard() {
   const statsCards = [
     {
       title: "Contests Attended",
-      value: 47,
+      value: stats?.totalScore || 47,
       icon: Trophy,
       color: "bg-blue-500/10",
       iconColor: "text-blue-400",
@@ -94,7 +95,7 @@ export default function Dashboard() {
     },
     {
       title: "Problems Solved",
-      value: 342,
+      value: stats?.problemsSolved || 342,
       icon: Code,
       color: "bg-violet-500/10",
       iconColor: "text-violet-400",
@@ -118,7 +119,6 @@ export default function Dashboard() {
         variants={containerVariants}
         className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative"
       >
-        {/* Particle Background */}
         <ParticlesBackground />
 
         {/* Header Section */}
@@ -157,9 +157,9 @@ export default function Dashboard() {
                     <p className="text-slate-500 text-xs font-black uppercase tracking-widest mb-1">
                       {stat.title}
                     </p>
-                    <p className="text-3xl font-black text-white">
+                    <div className="text-3xl font-black text-white">
                       {statsLoading ? <Skeleton className="h-8 w-20" /> : stat.value.toLocaleString()}
-                    </p>
+                    </div>
                   </div>
                   <div className={`w-12 h-12 ${stat.color} ${stat.border} border rounded-2xl flex items-center justify-center shadow-lg`}>
                     <stat.icon className={`${stat.iconColor} h-6 w-6`} />
@@ -194,15 +194,15 @@ export default function Dashboard() {
               </div>
               <CardContent className="p-0">
                 {contestsLoading ? (
-                  <div className="p-6 space-y-4">
+                  <div className="p-4 space-y-2">
                     {[1, 2].map((i) => (
-                      <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                      <Skeleton key={i} className="h-10 w-full rounded-lg" />
                     ))}
                   </div>
                 ) : liveContests.length === 0 ? (
-                  <div className="py-20 flex flex-col items-center justify-center text-slate-500 italic">
-                    <Zap className="h-10 w-10 mb-4 opacity-20" />
-                    <p>All battlegrounds are currently dormant.</p>
+                  <div className="py-4 px-6 flex items-center gap-3 text-slate-500 text-sm italic border-t border-white/5">
+                    <Zap className="h-4 w-4 opacity-30 shrink-0" />
+                    <p>No contests are live right now. Check back soon.</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -227,7 +227,7 @@ export default function Dashboard() {
                               className="group border-white/5 hover:bg-white/[0.02] transition-colors"
                             >
                               <TableCell className="font-bold text-slate-200">
-                                {contest.name || contest.title}
+                                {contest.title}
                               </TableCell>
                               <TableCell>
                                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
@@ -242,7 +242,7 @@ export default function Dashboard() {
                               </TableCell>
                               <TableCell>
                                 <span className="text-emerald-400 font-bold text-sm">
-                                  {contest.end_time ? getTimeRemaining(contest.end_time) : "LIVE"}
+                                  {contest.endTime ? getTimeRemaining(contest.endTime) : "LIVE"}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
@@ -304,7 +304,7 @@ export default function Dashboard() {
                         {upcomingContests.map((contest: any) => (
                           <TableRow key={contest.id} className="border-white/5 hover:bg-white/[0.02] group transition-colors">
                             <TableCell className="font-bold text-slate-200">
-                              {contest.name || contest.title}
+                              {contest.title}
                             </TableCell>
                             <TableCell>
                               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase">
@@ -314,7 +314,7 @@ export default function Dashboard() {
                             <TableCell className="text-slate-400 text-sm font-medium">
                               <div className="flex items-center gap-1.5">
                                 <Calendar className="h-3.5 w-3.5" />
-                                {contest.start_time ? formatDateTime(contest.start_time) : "TBD"}
+                                {contest.startTime ? formatDateTime(contest.startTime) : "TBD"}
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
@@ -339,13 +339,8 @@ export default function Dashboard() {
 
           {/* Sidebar */}
           <motion.div variants={itemVariants} className="space-y-8">
-            {/* Daily Streak */}
             <DailyStreakCard />
-
-            {/* Progress Graph */}
             <ProgressGraph className="border-white/5 bg-slate-900/40" />
-
-            {/* Contest Timer */}
           </motion.div>
         </div>
       </motion.div>

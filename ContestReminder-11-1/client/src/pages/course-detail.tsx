@@ -19,21 +19,47 @@ import {
   Award,
   Terminal,
   Play,
-  Info
+  Info,
+  PlayCircle,
+  CheckCircle2
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { EnrollmentStatus } from "@/components/courses/enrollment-status";
 import ParticlesBackground from "@/components/layout/particles-background";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Course, Lesson, Enrollment } from "@shared/schema";
 import PageTransition from "@/components/layout/page-transition";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+
+// Hardcoded course data for the integrated video player
+const LECTURES_DATA: Record<string, { title: string; videoUrl: string; duration: string }[]> = {
+  "competitive-programming": [
+    { title: "Intro to Competitive Programming", videoUrl: "https://www.youtube.com/embed/VbMtwluH980", duration: "15:20" },
+    { title: "Time Complexity & Big O Notation", videoUrl: "https://www.youtube.com/embed/D6xkbGLQesk", duration: "22:45" },
+    { title: "Sliding Window Technique", videoUrl: "https://www.youtube.com/embed/MK-NZ4hN7rs", duration: "18:10" }
+  ],
+  "system-design": [
+    { title: "System Design Introduction", videoUrl: "https://www.youtube.com/embed/bBTPZ9NdSk8", duration: "12:30" },
+    { title: "Load Balancing", videoUrl: "https://www.youtube.com/embed/K0Ta65OqQkY", duration: "19:05" }
+  ],
+  "data-structures": [
+    { title: "Advanced Data Structures", videoUrl: "https://www.youtube.com/embed/oSWTXtMglKE", duration: "25:00" },
+    { title: "Graph Theory Basics", videoUrl: "https://www.youtube.com/embed/cWNEl4HE2OE", duration: "30:15" }
+  ]
+};
+
+const DEFAULT_LECTURES = [
+  { title: "Welcome to the Course", videoUrl: "https://www.youtube.com/embed/jS4aFq5-91M", duration: "05:00" },
+  { title: "Core Concepts Overview", videoUrl: "https://www.youtube.com/embed/VbMtwluH980", duration: "45:00" }
+];
 
 export default function CourseDetail() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const userId = "demo-user-123";
+  const { user } = useAuth();
+  const userId = user?.id || "demo-user-123";
 
   const { data: course, isLoading: courseLoading, error: courseError } = useQuery<Course>({
     queryKey: ["/api/courses", id],
@@ -59,6 +85,22 @@ export default function CourseDetail() {
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
     },
   });
+
+  const [isLearning, setIsLearning] = useState(false);
+  const [currentLectureIdx, setCurrentLectureIdx] = useState(0);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("learning") === "true") {
+      setIsLearning(true);
+    }
+  }, []);
+  const getLectures = () => {
+    if (!id) return DEFAULT_LECTURES;
+    return LECTURES_DATA[id] || (course?.title.toLowerCase().includes("competitive") ? LECTURES_DATA["competitive-programming"] : DEFAULT_LECTURES);
+  };
+
+  const currentLectures = getLectures();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -207,11 +249,7 @@ export default function CourseDetail() {
                     enrollment={enrollment}
                     courseId={course.id}
                     onEnroll={(courseId) => enrollMutation.mutate(courseId)}
-                    onContinue={(courseId) => {
-                      if (lessons.length > 0) {
-                        setLocation(`/course/${courseId}/lesson/${lessons[0].id}`);
-                      }
-                    }}
+                    onContinue={() => setIsLearning(true)}
                     loading={enrollMutation.isPending}
                   />
                 </Card>
@@ -219,6 +257,70 @@ export default function CourseDetail() {
             </div>
           </div>
         </motion.div>
+
+        <AnimatePresence>
+          {isLearning && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-12"
+            >
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="aspect-video bg-slate-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl relative">
+                    <iframe
+                      src={currentLectures[currentLectureIdx].videoUrl}
+                      className="absolute inset-0 w-full h-full"
+                      allowFullScreen
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                    <div>
+                      <h3 className="text-xl font-black text-white">{currentLectures[currentLectureIdx].title}</h3>
+                      <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">Module {currentLectureIdx + 1} of {currentLectures.length}</p>
+                    </div>
+                    <Button 
+                      onClick={() => setCurrentLectureIdx((prev) => (prev + 1) % currentLectures.length)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-widest px-6"
+                    >
+                      Next Video
+                    </Button>
+                  </div>
+                </div>
+                <Card className="bg-slate-900/40 border-white/5 rounded-3xl overflow-hidden self-start">
+                  <div className="p-6 border-b border-white/5 bg-white/5">
+                    <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                      <PlayCircle className="h-4 w-4 text-blue-500" />
+                      Video Lectures
+                    </h4>
+                  </div>
+                  <div className="p-2 space-y-1">
+                    {currentLectures.map((lecture, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentLectureIdx(idx)}
+                        className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all ${
+                          idx === currentLectureIdx ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black ${
+                          idx === currentLectureIdx ? 'bg-blue-500 text-white' : 'bg-slate-800'
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-sm font-bold truncate">{lecture.title}</p>
+                          <p className="text-[10px] uppercase font-black opacity-50">{lecture.duration}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-12">

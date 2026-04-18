@@ -1,23 +1,179 @@
 import axios from "axios";
 
-// Define contest data types
+// Define production-grade contest data types
 export interface Contest {
   id: string;
-  name: string;
+  title: string;
   platform: string;
-  start_time: string;
-  end_time: string;
-  duration: number; // in minutes
   url: string;
-  status: "upcoming" | "live" | "completed";
+  startTime: string; // ISO string
+  endTime: string;   // ISO string
+  duration: number;  // in minutes
+  status: "upcoming" | "ongoing" | "past";
+  externalId?: string;
 }
 
-export interface ApiResponse {
-  status: string;
-  result?: any;
+// Famous competitive programming platforms — only these are shown
+export const ALLOWED_PLATFORMS = new Set([
+  "codeforces.com",
+  "leetcode.com",
+  "codechef.com",
+  "atcoder.jp",
+  "hackerrank.com",
+  "geeksforgeeks.org",
+  "topcoder.com",
+  "hackerearth.com",
+  "codingninjas.com",
+  // Normalised names used by CodeforcesAPI / LeetCodeAPI
+  "Codeforces",
+  "LeetCode",
+  "CodeChef",
+  "AtCoder",
+  "HackerRank",
+  "GeeksforGeeks",
+  "TopCoder",
+  "HackerEarth",
+  "Coding Ninjas",
+]);
+
+export function isAllowedPlatform(platform: string): boolean {
+  if (!platform) return false;
+  const p = platform.toLowerCase();
+  return (
+    ALLOWED_PLATFORMS.has(platform) ||          // exact match
+    p.includes("codeforces") ||
+    p.includes("leetcode") ||
+    p.includes("codechef") ||
+    p.includes("atcoder") ||
+    p.includes("hackerrank") ||
+    p.includes("geeksforgeeks") ||
+    p.includes("topcoder") ||
+    p.includes("hackerearth") ||
+    p.includes("codingninjas") ||
+    p.includes("coding ninjas")
+  );
+}
+export class ClistAPI {
+  private static readonly BASE_URL = "https://clist.by/api/v2/contest/";
+  private static readonly USERNAME = process.env.CLIST_USERNAME || "demo";
+  private static readonly API_KEY = process.env.CLIST_API_KEY || "";
+
+  static async getContests(): Promise<Contest[]> {
+    if (!this.API_KEY || this.API_KEY === "") {
+      console.warn("[ClistAPI] API Key missing. Falling back to other sources.");
+      return [];
+    }
+
+    try {
+      const response = await axios.get(this.BASE_URL, {
+        params: {
+          username: this.USERNAME,
+          api_key: this.API_KEY,
+          format: "json",
+          start__gte: new Date().toISOString(),
+          order_by: "start",
+          limit: 200,
+          // Only fetch from famous competitive programming platforms
+          resource__name__in: [
+            "codeforces.com",
+            "leetcode.com",
+            "codechef.com",
+            "atcoder.jp",
+            "hackerrank.com",
+            "geeksforgeeks.org",
+            "topcoder.com",
+            "hackerearth.com",
+            "codingninjas.com",
+          ].join(","),
+        },
+        timeout: 15000
+      });
+
+      if (response.data && response.data.objects) {
+        return response.data.objects.map((contest: any) => {
+          const startTime = new Date(contest.start);
+          const endTime = new Date(contest.end);
+          const now = new Date();
+          
+          let status: "upcoming" | "ongoing" | "past" = "upcoming";
+          if (now < startTime) status = "upcoming";
+          else if (now >= startTime && now <= endTime) status = "ongoing";
+          else status = "past";
+
+          return {
+            id: `clist-${contest.id}`,
+            title: contest.event,
+            platform: typeof contest.resource === 'object' ? contest.resource.name : contest.resource,
+            url: contest.href,
+            startTime: contest.start,
+            endTime: contest.end,
+            duration: Math.round(contest.duration / 60),
+            status,
+            externalId: contest.id.toString()
+          };
+        });
+      }
+      return [];
+    } catch (error) {
+      console.error("[ClistAPI] Error fetching contests:", error);
+      return [];
+    }
+  }
 }
 
-// Codeforces API integration
+// LeetCode API integration (Backup)
+export class LeetCodeAPI {
+  private static readonly GRAPHQL_URL = "https://leetcode.com/graphql";
+  
+  static async getContests(): Promise<Contest[]> {
+    try {
+      const response = await axios.post(this.GRAPHQL_URL, {
+        query: `
+          {
+            allContests {
+              title
+              titleSlug
+              startTime
+              duration
+            }
+          }
+        `
+      }, {
+        timeout: 10000,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
+      if (response.data && response.data.data && response.data.data.allContests) {
+        const now = Math.floor(Date.now() / 1000);
+        return response.data.data.allContests
+          .filter((contest: any) => (contest.startTime + contest.duration) > now)
+          .map((contest: any) => {
+            const startTime = contest.startTime * 1000;
+            const durationMs = contest.duration * 1000;
+            return {
+              id: `leetcode-${contest.titleSlug}`,
+              title: contest.title,
+              platform: "LeetCode",
+              startTime: new Date(startTime).toISOString(),
+              endTime: new Date(startTime + durationMs).toISOString(),
+              duration: Math.round(contest.duration / 60),
+              url: `https://leetcode.com/contest/${contest.titleSlug}`,
+              status: contest.startTime > now ? "upcoming" : "ongoing"
+            };
+          });
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching LeetCode contests:", error);
+      return [];
+    }
+  }
+}
+
+// Codeforces API integration (Backup)
 export class CodeforcesAPI {
   private static readonly BASE_URL = "https://codeforces.com/api";
   
@@ -33,35 +189,27 @@ export class CodeforcesAPI {
       if (response.data.status === "OK") {
         return response.data.result
           .filter((contest: any) => contest.phase === "BEFORE" || contest.phase === "CODING")
-          .slice(0, 20) // Get latest 20 contests
           .map((contest: any) => ({
-            id: contest.id.toString(),
-            name: contest.name,
+            id: `cf-${contest.id}`,
+            title: contest.name,
             platform: "Codeforces",
-            start_time: new Date(contest.startTimeSeconds * 1000).toISOString(),
-            end_time: new Date((contest.startTimeSeconds + contest.durationSeconds) * 1000).toISOString(),
+            startTime: new Date(contest.startTimeSeconds * 1000).toISOString(),
+            endTime: new Date((contest.startTimeSeconds + contest.durationSeconds) * 1000).toISOString(),
             duration: Math.round(contest.durationSeconds / 60),
             url: `https://codeforces.com/contest/${contest.id}`,
-            status: contest.phase === "BEFORE" ? "upcoming" : "live"
+            status: contest.phase === "BEFORE" ? "upcoming" : "ongoing",
+            externalId: contest.id.toString()
           }));
       }
       return [];
     } catch (error) {
       console.error("Error fetching Codeforces contests:", error);
-      // Return empty array but log the specific error for debugging
-      if (axios.isAxiosError(error)) {
-        console.error("Codeforces API Error:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        });
-      }
       return [];
     }
   }
 }
 
-// Universal contest API (Kontests.net)
+// Universal contest API aggregator (Kontests.net - Backup)
 export class KontestsAPI {
   private static readonly BASE_URL = "https://www.kontests.net/api/v1";
   
@@ -76,28 +224,19 @@ export class KontestsAPI {
       
       const now = new Date();
       return response.data
-        .filter((contest: any) => new Date(contest.end_time) > now) // Only upcoming and live contests
-        .slice(0, 50) // Limit to 50 contests
+        .filter((contest: any) => new Date(contest.end_time) > now)
         .map((contest: any) => ({
-          id: `${contest.site}-${contest.name.replace(/\s+/g, '-')}-${Date.parse(contest.start_time)}`,
-          name: contest.name,
+          id: `kontest-${contest.site}-${Date.parse(contest.start_time)}`,
+          title: contest.name,
           platform: this.normalizePlatform(contest.site),
-          start_time: contest.start_time,
-          end_time: contest.end_time,
+          startTime: contest.start_time,
+          endTime: contest.end_time,
           duration: Math.round((new Date(contest.end_time).getTime() - new Date(contest.start_time).getTime()) / 60000),
           url: contest.url,
-          status: new Date(contest.start_time) <= now && new Date(contest.end_time) > now ? "live" : "upcoming"
+          status: new Date(contest.start_time) <= now ? "ongoing" : "upcoming"
         }));
     } catch (error) {
       console.error("Error fetching from Kontests API:", error);
-      // Return empty array but log the specific error for debugging
-      if (axios.isAxiosError(error)) {
-        console.error("Kontests API Error:", {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        });
-      }
       return [];
     }
   }
@@ -114,77 +253,82 @@ export class KontestsAPI {
       'Kick Start': 'Google Kick Start',
       'CSAcademy': 'CS Academy',
     };
-    
     return platformMap[site] || site;
   }
 }
 
-// Contest aggregator service
+// Contest aggregator service with intelligent deduplication and caching
 export class ContestService {
-  static async fetchAllContests(): Promise<Contest[]> {
+  private static cache: Contest[] = [];
+  private static lastFetch: number = 0;
+  private static readonly CACHE_DURATION = 15 * 60 * 1000; // 15 minutes cache
+
+  static async fetchAllContests(force = false): Promise<Contest[]> {
+    const now = Date.now();
+    
+    if (!force && this.cache.length > 0 && (now - this.lastFetch) < this.CACHE_DURATION) {
+      return this.cache;
+    }
+
     try {
-      // Fetch from both APIs simultaneously
-      const [codeforcesContests, kontestsContests] = await Promise.allSettled([
+      console.log("[ContestService] Syncing all global contest sources...");
+      
+      const [clist, codeforces, kontests, leetcode] = await Promise.allSettled([
+        ClistAPI.getContests(),
         CodeforcesAPI.getContests(),
-        KontestsAPI.getAllContests()
+        KontestsAPI.getAllContests(),
+        LeetCodeAPI.getContests()
       ]);
       
       const contests: Contest[] = [];
       
-      // Add Codeforces contests
-      if (codeforcesContests.status === "fulfilled") {
-        contests.push(...codeforcesContests.value);
-      }
+      if (clist.status === "fulfilled") contests.push(...clist.value);
+      if (codeforces.status === "fulfilled") contests.push(...codeforces.value);
+      if (kontests.status === "fulfilled") contests.push(...kontests.value);
+      if (leetcode.status === "fulfilled") contests.push(...leetcode.value);
       
-      // Add Kontests contests
-      if (kontestsContests.status === "fulfilled") {
-        contests.push(...kontestsContests.value);
-      }
-      
-      // Remove duplicates and sort by start time
+      // Intelligent deduplication (Primary URL matching + Fuzzy Title matching)
       const uniqueContests = contests.filter((contest, index, self) => 
-        index === self.findIndex(c => c.name === contest.name && c.platform === contest.platform)
+        index === self.findIndex(c => 
+          c.url === contest.url || 
+          (c.title === contest.title && c.platform === contest.platform && 
+           Math.abs(new Date(c.startTime).getTime() - new Date(contest.startTime).getTime()) < 3600000)
+        )
       );
       
-      return uniqueContests
-        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-        .slice(0, 100); // Limit to 100 most relevant contests
+      const sortedContests = uniqueContests
+        .filter(c => new Date(c.endTime) > new Date()) // ignore finished
+        .filter(c => isAllowedPlatform(c.platform))    // only famous platforms
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+      if (sortedContests.length > 0) {
+        this.cache = sortedContests;
+        this.lastFetch = now;
+      }
+
+      return sortedContests.length > 0 ? sortedContests : this.cache;
         
     } catch (error) {
-      console.error("Error in contest service:", error);
-      return [];
+      console.error("[ContestService] Sync error:", error);
+      return this.cache;
     }
   }
   
   static async getContestsByPlatform(platform: string): Promise<Contest[]> {
     const allContests = await this.fetchAllContests();
+    const search = platform.toLowerCase();
     return allContests.filter(contest => 
-      contest.platform.toLowerCase().includes(platform.toLowerCase())
+      contest.platform.toLowerCase().includes(search) ||
+      contest.title.toLowerCase().includes(search)
     );
   }
   
   static formatDuration(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    
     if (hours === 0) return `${mins}m`;
     if (mins === 0) return `${hours}h`;
     return `${hours}h ${mins}m`;
   }
-  
-  static getTimeUntilContest(startTime: string): string {
-    const now = new Date();
-    const start = new Date(startTime);
-    const diffMs = start.getTime() - now.getTime();
-    
-    if (diffMs <= 0) return "Started";
-    
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffDays > 0) return `${diffDays}d ${diffHours}h`;
-    if (diffHours > 0) return `${diffHours}h ${diffMinutes}m`;
-    return `${diffMinutes}m`;
-  }
 }
+

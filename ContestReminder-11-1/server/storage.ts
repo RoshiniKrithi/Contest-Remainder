@@ -32,6 +32,9 @@ import {
   quizAttempts,
   brainTeasers,
   teaserAttempts,
+  bookmarks,
+  type Bookmark,
+  type InsertBookmark,
   type User as SelectUser
 } from "./shared/schema";
 import { randomUUID } from "crypto";
@@ -67,7 +70,12 @@ export interface IStorage {
   getContest(id: string): Promise<Contest | undefined>;
   getAllContests(): Promise<Contest[]>;
   updateContestStatus(id: string, status: string): Promise<Contest | undefined>;
-  updateContestParticipants(id: string, participants: number): Promise<Contest | undefined>;
+  async updateContestParticipants(id: string, participants: number): Promise<Contest | undefined>;
+
+  // Bookmark operations
+  getBookmarks(userId: string): Promise<any[]>;
+  createBookmark(userId: string, contestId: string): Promise<any>;
+  deleteBookmark(userId: string, contestId: string): Promise<void>;
 
   // Problem operations
   createProblem(problem: InsertProblem): Promise<Problem>;
@@ -2587,6 +2595,22 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
+  // Bookmark operations
+  async getBookmarks(userId: string): Promise<any[]> {
+    return await this.db.select().from(bookmarks).where(eq(bookmarks.userId, userId));
+  }
+
+  async createBookmark(userId: string, contestId: string): Promise<any> {
+    const [result] = await this.db.insert(bookmarks).values({ userId, contestId }).returning();
+    return result;
+  }
+
+  async deleteBookmark(userId: string, contestId: string): Promise<void> {
+    await this.db.delete(bookmarks).where(
+      and(eq(bookmarks.userId, userId), eq(bookmarks.contestId, contestId))
+    );
+  }
+
   // Problem operations
   async createProblem(insertProblem: InsertProblem): Promise<Problem> {
     const result = await this.db.insert(problems).values(insertProblem).returning();
@@ -2902,11 +2926,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDailyBrainTeaser(): Promise<any> {
-    // Select the brain teaser for today
-    const teaser = await this.db.select().from(brainTeasers).where(
-      sql`DATE(date) = CURRENT_DATE`
-    ).limit(1);
-    return teaser[0] || null;
+    const allTeasers = await this.db.select().from(brainTeasers);
+    if (allTeasers.length === 0) return null;
+
+    const today = new Date();
+    const hash = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const index = hash % allTeasers.length;
+    return allTeasers[index];
   }
 
   async getTeaserAttempt(userId: string, teaserId: string): Promise<any> {

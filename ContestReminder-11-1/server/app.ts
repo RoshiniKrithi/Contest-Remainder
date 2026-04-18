@@ -35,8 +35,10 @@ const corsOptions: cors.CorsOptions = {
         // Check if it's a Vercel preview URL (e.g. contest-remainder-cnk7-git-main-user.vercel.app)
         const isVercelPreview = sanitizedOrigin.endsWith(".vercel.app") && 
                                sanitizedOrigin.includes("contest-remainder-cnk7");
+                               
+        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(sanitizedOrigin);
 
-        if (isExplicitlyAllowed || isVercelPreview || process.env.NODE_ENV !== "production") {
+        if (isExplicitlyAllowed || isVercelPreview || isLocalhost || process.env.NODE_ENV !== "production") {
             callback(null, true);
         } else {
             // Log the blocked origin for easier debugging

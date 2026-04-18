@@ -41,3 +41,15 @@ docs/daily-log-template.md
 
 # TypeScript
 *.tsbuildinfo
+# logs
+*.log
+tmp_*.txt
+debug-*.log
+backend_*.log
+
+# node
+node_modules/
+
+# misc
+scratch/
+*.txt   

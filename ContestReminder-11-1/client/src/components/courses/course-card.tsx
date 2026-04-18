@@ -8,6 +8,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { EnrollmentStatus } from "./enrollment-status";
 import type { Enrollment, Course } from "@shared/schema";
 import { motion } from "framer-motion";
+import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CourseCardProps {
   course: Course;
@@ -15,7 +17,9 @@ interface CourseCardProps {
 
 export default function CourseCard({ course }: CourseCardProps) {
   const queryClient = useQueryClient();
-  const userId = "demo-user-123";
+  const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const userId = user?.id || "demo-user-123";
 
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery<Enrollment>({
     queryKey: ["/api/users", userId, "courses", course.id, "enrollment"],
@@ -115,7 +119,7 @@ export default function CourseCard({ course }: CourseCardProps) {
               enrollment={enrollment}
               courseId={course.id}
               onEnroll={(courseId) => enrollMutation.mutate(courseId)}
-              onContinue={(courseId) => window.location.href = `/course/${courseId}`}
+              onContinue={(courseId) => setLocation(`/course/${courseId}?learning=true`)}
               loading={enrollmentLoading || enrollMutation.isPending}
             />
           </div>

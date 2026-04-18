@@ -10,7 +10,8 @@ import {
   insertEnrollmentSchema,
   insertLessonProgressSchema
 } from "./shared/schema";
-import { ContestService } from "./contest-apis";
+import { ContestService, isAllowedPlatform } from "./contest-apis";
+import { sendWhatsAppReminder, isTwilioConfigured } from "./whatsappService";
 import { setupAuth } from "./auth";
 import type { Request, Response, NextFunction } from "express";
 
@@ -23,6 +24,72 @@ function ensureAdmin(req: Request, res: Response, next: NextFunction) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
+  
+  // Favicon handler
+  app.get("/favicon.ico", (req, res) => res.status(204).end());
+
+  // Production-grade Contest Tracker Endpoints
+  app.get("/api/contests/all", async (req, res) => {
+    try {
+      const { platform } = req.query;
+      const internalContests = (await storage.getAllContests())
+        .filter(c => isAllowedPlatform(c.platform));
+      const externalContests = await ContestService.fetchAllContests().catch(() => []);
+
+      let contests = [...internalContests, ...externalContests];
+
+      // Deduplicate by externalId
+      const seen = new Set<string>();
+      contests = contests.filter(c => {
+        const key = (c as any).externalId || c.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      if (platform && typeof platform === 'string') {
+        contests = contests.filter(c => c.platform?.toLowerCase().includes(platform.toLowerCase()));
+      }
+
+      contests.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      res.json(contests);
+    } catch (error) {
+      console.error("Error in /api/contests/all:", error);
+      res.status(500).json({ error: "Failed to fetch all contests" });
+    }
+  });
+
+  app.get("/api/contests/upcoming", async (req, res) => {
+    try {
+      const now = new Date();
+      const internalContests = (await storage.getAllContests()).filter(c => isAllowedPlatform(c.platform));
+      const externalContests = await ContestService.fetchAllContests().catch(() => []);
+      const contests = [...internalContests, ...externalContests];
+      const upcoming = contests
+        .filter(c => new Date(c.startTime) > now)
+        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      res.json(upcoming);
+    } catch (error) {
+      console.error("Error in upcoming contests:", error);
+      res.status(500).json({ error: "Failed to fetch upcoming contests" });
+    }
+  });
+
+  app.get("/api/contests/ongoing", async (req, res) => {
+    try {
+      const now = new Date();
+      const internalContests = (await storage.getAllContests()).filter(c => isAllowedPlatform(c.platform));
+      const externalContests = await ContestService.fetchAllContests().catch(() => []);
+      const contests = [...internalContests, ...externalContests];
+      const ongoing = contests.filter(c =>
+        new Date(c.startTime) <= now && new Date(c.endTime) > now
+      );
+      res.json(ongoing);
+    } catch (error) {
+      console.error("Error in ongoing contests:", error);
+      res.status(500).json({ error: "Failed to fetch ongoing contests" });
+    }
+  });
 
   // User routes
   app.get("/api/contests", async (req, res) => {
@@ -236,194 +303,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         contests = await ContestService.fetchAllContests();
       }
 
-      // Always add comprehensive demo data to ensure all requested platforms are represented
-      const now = new Date();
-
-      // Add comprehensive demo data for all requested platforms
-      const mockContests = [
-        // Codeforces contests
-        {
-          id: "cf-round-912",
-          name: "Codeforces Round #912 (Div. 2)",
-          platform: "Codeforces",
-          start_time: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(),
-          duration: 120,
-          url: "https://codeforces.com/contest/1912",
-          status: "upcoming" as const
-        },
-        {
-          id: "cf-educational-168",
-          name: "Educational Codeforces Round 168 (Rated for Div. 2)",
-          platform: "Codeforces",
-          start_time: new Date(now.getTime() - 45 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 90 * 60 * 1000).toISOString(),
-          duration: 135,
-          url: "https://codeforces.com/contest/1988",
-          status: "live" as const
-        },
-
-        // LeetCode contests
-        {
-          id: "lc-weekly-378",
-          name: "Weekly Contest 378",
-          platform: "LeetCode",
-          start_time: new Date(now.getTime() - 30 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-          duration: 90,
-          url: "https://leetcode.com/contest/weekly-contest-378",
-          status: "live" as const
-        },
-        {
-          id: "lc-biweekly-119",
-          name: "Biweekly Contest 119",
-          platform: "LeetCode",
-          start_time: new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 7.5 * 60 * 60 * 1000).toISOString(),
-          duration: 90,
-          url: "https://leetcode.com/contest/biweekly-contest-119",
-          status: "upcoming" as const
-        },
-
-        // AtCoder contests
-        {
-          id: "atc-abc-334",
-          name: "AtCoder Beginner Contest 334",
-          platform: "AtCoder",
-          start_time: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 25 * 60 * 60 * 1000 + 40 * 60 * 1000).toISOString(),
-          duration: 100,
-          url: "https://atcoder.jp/contests/abc334",
-          status: "upcoming" as const
-        },
-
-        // CodeChef contests
-        {
-          id: "cc-cook-off-dec",
-          name: "CodeChef Cook-Off December 2024",
-          platform: "CodeChef",
-          start_time: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 2.5 * 60 * 60 * 1000).toISOString(),
-          duration: 150,
-          url: "https://www.codechef.com/COOK151A",
-          status: "upcoming" as const
-        },
-        {
-          id: "cc-starters-113",
-          name: "Starters 113 (Div. 1, 2, 3 & 4)",
-          platform: "CodeChef",
-          start_time: new Date(now.getTime() - 20 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 100 * 60 * 1000).toISOString(),
-          duration: 120,
-          url: "https://www.codechef.com/START113A",
-          status: "live" as const
-        },
-
-        // HackerRank contests
-        {
-          id: "hr-world-championship",
-          name: "HackerRank World Championship Final",
-          platform: "HackerRank",
-          start_time: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-          duration: 195,
-          url: "https://www.hackerrank.com/contests/world-championship-final",
-          status: "live" as const
-        },
-        {
-          id: "hr-algorithms-contest",
-          name: "HackerRank Algorithms Contest",
-          platform: "HackerRank",
-          start_time: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 16 * 60 * 60 * 1000).toISOString(),
-          duration: 240,
-          url: "https://www.hackerrank.com/contests/algorithms-contest-2024",
-          status: "upcoming" as const
-        },
-
-        // GeeksforGeeks contests
-        {
-          id: "gfg-job-a-thon-34",
-          name: "Job-A-Thon 34: Hiring Challenge",
-          platform: "GeeksforGeeks",
-          start_time: new Date(now.getTime() - 10 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 110 * 60 * 1000).toISOString(),
-          duration: 120,
-          url: "https://practice.geeksforgeeks.org/contest/job-a-thon-34",
-          status: "live" as const
-        },
-        {
-          id: "gfg-weekly-contest-178",
-          name: "Weekly Contest 178",
-          platform: "GeeksforGeeks",
-          start_time: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 5.5 * 60 * 60 * 1000).toISOString(),
-          duration: 90,
-          url: "https://practice.geeksforgeeks.org/contest/weekly-contest-178",
-          status: "upcoming" as const
-        },
-        {
-          id: "gfg-potd-contest",
-          name: "Problem of the Day Contest - December",
-          platform: "GeeksforGeeks",
-          start_time: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(),
-          duration: 180,
-          url: "https://practice.geeksforgeeks.org/contest/potd-december-2024",
-          status: "upcoming" as const
-        },
-
-        // Coding Ninjas contests
-        {
-          id: "cn-code-kaze-4",
-          name: "Code Kaze 4.0",
-          platform: "Coding Ninjas",
-          start_time: new Date(now.getTime() - 25 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-          duration: 145,
-          url: "https://www.codingninjas.com/studio/contests/code-kaze-40",
-          status: "live" as const
-        },
-        {
-          id: "cn-weekly-contest-134",
-          name: "Weekly Contest 134",
-          platform: "Coding Ninjas",
-          start_time: new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 9.5 * 60 * 60 * 1000).toISOString(),
-          duration: 90,
-          url: "https://www.codingninjas.com/studio/contests/weekly-contest-134",
-          status: "upcoming" as const
-        },
-        {
-          id: "cn-hiring-blitz",
-          name: "Hiring Blitz - Tech Companies",
-          platform: "Coding Ninjas",
-          start_time: new Date(now.getTime() + 36 * 60 * 60 * 1000).toISOString(),
-          end_time: new Date(now.getTime() + 39 * 60 * 60 * 1000).toISOString(),
-          duration: 180,
-          url: "https://www.codingninjas.com/studio/contests/hiring-blitz-2024",
-          status: "upcoming" as const
-        }
-      ];
-
-      // Always add all mock contests to ensure comprehensive platform coverage
-      const baseContests = Array.isArray(contests) ? contests : [];
-      const combinedContests = [...baseContests, ...mockContests];
-
-      if (platform && typeof platform === 'string') {
-        contests = combinedContests.filter(contest =>
-          contest.platform.toLowerCase().includes(platform.toLowerCase())
-        );
-      } else {
-        contests = combinedContests;
-      }
-
       res.json(contests);
     } catch (error) {
       console.error("Error fetching external contests:", error);
       res.status(500).json({ error: "Failed to fetch external contests" });
     }
   });
+
 
   // Course routes
   app.get("/api/courses", async (req, res) => {
@@ -898,6 +784,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END CHALLENGE ROUTES ====================
 
+
+  // ── WhatsApp Test Route ──────────────────────────────────────────────────
+  app.get("/api/test-whatsapp", async (req, res) => {
+    try {
+      if (!isTwilioConfigured()) {
+        return res.status(503).json({
+          success: false,
+          message: "Twilio not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and USER_WHATSAPP_NUMBER in .env",
+        });
+      }
+
+      const testContest = {
+        id: "test-001",
+        title: "Test Contest — CodeArena",
+        platform: "Codeforces",
+        startTime: new Date(Date.now() + 10 * 60 * 1000),
+        url: "https://codeforces.com",
+      };
+
+      const sent = await sendWhatsAppReminder(testContest);
+      res.json({
+        success: sent,
+        message: sent
+          ? "✅ Test WhatsApp message sent successfully!"
+          : "❌ Failed to send. Check server logs for details.",
+      });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
 
   const httpServer = createServer(app);
 

@@ -1,6 +1,8 @@
 import "dotenv/config";
 import { initializeApp, app } from "./app";
 import { log } from "./log";
+import { setupContestScheduler } from "./scheduler";
+import { setupNotificationScheduler } from "./notificationScheduler";
 
 async function startServer() {
   const server = await initializeApp();
@@ -9,6 +11,8 @@ async function startServer() {
 
   server.listen(PORT, "0.0.0.0", () => {
     log(`🚀 Global server heart-beat detected on port ${PORT}`);
+    setupContestScheduler();
+    setupNotificationScheduler();
   });
 }
 

@@ -23,11 +23,24 @@ export const contests = pgTable("contests", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
+  platform: text("platform").notNull().default("System"),
+  url: text("url"),
   startTime: timestamp("start_time").notNull(),
   endTime: timestamp("end_time").notNull(),
-  status: text("status").notNull().default("upcoming"), // upcoming, live, completed
-  createdBy: varchar("created_by").notNull(),
+  duration: integer("duration").notNull().default(0),
+  status: text("status").notNull().default("upcoming"),
+  externalId: text("external_id").unique(),
   participants: integer("participants").default(0),
+  createdBy: text("created_by").notNull().default("system"),
+  lastUpdated: timestamp("last_updated").default(sql`now()`),
+  notified: boolean("notified").default(false), // WhatsApp reminder sent flag
+});
+
+export const bookmarks = pgTable("bookmarks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  contestId: varchar("contest_id").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
 });
 
 export const problems = pgTable("problems", {
@@ -132,7 +145,8 @@ export const userActivity = pgTable("user_activity", {
 
 // Insert schemas
 export const insertUserSchema = (createInsertSchema as any)(users).omit({ id: true });
-export const insertContestSchema = (createInsertSchema as any)(contests).omit({ id: true, participants: true });
+export const insertContestSchema = (createInsertSchema as any)(contests).omit({ id: true, participants: true, lastUpdated: true });
+export const insertBookmarkSchema = (createInsertSchema as any)(bookmarks).omit({ id: true, createdAt: true });
 export const insertProblemSchema = (createInsertSchema as any)(problems).omit({ id: true });
 export const insertSubmissionSchema = (createInsertSchema as any)(submissions).omit({ id: true, submittedAt: true, score: true });
 export const insertLeaderboardSchema = (createInsertSchema as any)(leaderboard).omit({ id: true, rank: true });
@@ -172,7 +186,8 @@ export type LessonProgress = typeof lessonProgress.$inferSelect;
 export type InsertLessonProgress = z.infer<typeof insertLessonProgressSchema>;
 
 export type UserActivity = typeof userActivity.$inferSelect;
-export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
 
 // Challenges - Typing Challenge Tables
 export const typingChallenges = pgTable("typing_challenges", {
