@@ -55,7 +55,7 @@ function Router() {
         <ProtectedRoute path="/course/:id/lesson/:lessonId" component={LessonDetail} />
         <ProtectedRoute path="/problems" component={Problems} />
         <ProtectedRoute path="/problems/:id" component={ProblemDetail} />
-        <ProtectedAdminRoute path="/profile" component={Profile} />
+        <ProtectedRoute path="/profile" component={Profile} />
         <ProtectedRoute path="/leaderboard" component={Leaderboard} />
         <ProtectedRoute path="/platform/:platform" component={PlatformDetail} />
 
@@ -72,7 +72,6 @@ function Router() {
 
 function AppContent() {
   const [location] = useLocation();
-  console.log("AppContent rendering at:", location);
 
   const isAdminRoute = location.startsWith("/admin");
   const { user } = useAuth();

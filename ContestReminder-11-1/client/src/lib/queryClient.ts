@@ -3,6 +3,8 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    // 503 = server starting up — show friendly message
+    if (res.status === 503) throw new Error("Server is starting up, please wait a moment and try again.");
     throw new Error(`${res.status}: ${text}`);
   }
 }
@@ -48,6 +50,12 @@ export const getQueryFn: <T>(options: {
         return null;
       }
 
+      // Treat server errors as null for auth queries to avoid crashing the app
+      if (res.status >= 500) {
+        console.warn(`[QueryClient] Server error ${res.status} for ${fullUrl} — returning null`);
+        return null;
+      }
+
       await throwIfResNotOk(res);
       return await res.json();
     };
@@ -60,6 +68,7 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       retry: false,
+      throwOnError: false,
     },
     mutations: {
       retry: false,
