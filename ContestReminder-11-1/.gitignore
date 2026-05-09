@@ -39,8 +39,8 @@ docs/daily-log-template.md
 *.swp
 *.swo
 
-# TypeScript
-*.tsbuildinfo
+# Sessions
+sessions/
 # logs
 *.log
 tmp_*.txt

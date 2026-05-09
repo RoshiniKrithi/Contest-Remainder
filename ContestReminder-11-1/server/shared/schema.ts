@@ -14,9 +14,16 @@ export const users = pgTable("users", {
   googleId: text("google_id").unique(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("user"), // user, admin
+  role: text("role").notNull().default("user"),
   streak: integer("streak").default(0),
   lastDailySolve: timestamp("last_daily_solve"),
+  // Platform handles for stats aggregation
+  cfHandle: text("cf_handle"),
+  lcHandle: text("lc_handle"),
+  ccHandle: text("cc_handle"),
+  atHandle: text("at_handle"),
+  hrHandle: text("hr_handle"),
+  gfgHandle: text("gfg_handle"),
 });
 
 export const contests = pgTable("contests", {
@@ -35,6 +42,34 @@ export const contests = pgTable("contests", {
   lastUpdated: timestamp("last_updated").default(sql`now()`),
   notified: boolean("notified").default(false), // WhatsApp reminder sent flag
 });
+
+// ── Group Tracker ─────────────────────────────────────────────────────────────
+export const groups = pgTable("groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  inviteCode: text("invite_code").notNull().unique(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const groupMembers = pgTable("group_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  groupId: varchar("group_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  // Snapshot of handles at join time — updated on refresh
+  cfHandle: text("cf_handle"),
+  lcHandle: text("lc_handle"),
+  ccHandle: text("cc_handle"),
+  joinedAt: timestamp("joined_at").default(sql`now()`),
+});
+
+export const insertGroupSchema = (createInsertSchema as any)(groups).omit({ id: true, createdAt: true });
+export const insertGroupMemberSchema = (createInsertSchema as any)(groupMembers).omit({ id: true, joinedAt: true });
+
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type GroupMember = typeof groupMembers.$inferSelect;
 
 export const bookmarks = pgTable("bookmarks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
