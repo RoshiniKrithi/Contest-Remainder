@@ -75,13 +75,7 @@ export default function Contests() {
   const upcomingContests = filteredContests.filter((c) => c.status === "upcoming");
   const completedContests = filteredContests.filter((c) => c.status === "completed");
 
-  const contestsByPlatform = contests.reduce((acc, contest) => {
-    if (!acc[contest.platform]) {
-      acc[contest.platform] = { live: [], upcoming: [], completed: [] };
-    }
-    acc[contest.platform][contest.status].push(contest);
-    return acc;
-  }, {} as Record<string, { live: ExternalContest[], upcoming: ExternalContest[], completed: ExternalContest[] }>);
+
 
   return (
     <PageTransition>
