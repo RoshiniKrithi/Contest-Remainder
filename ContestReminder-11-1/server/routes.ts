@@ -12,6 +12,10 @@ import {
 } from "./shared/schema";
 import { ContestService, isAllowedPlatform } from "./contest-apis";
 import { sendWhatsAppReminder, isTwilioConfigured } from "./whatsappService";
+import { fetchAllPlatformStats } from "./platformStats";
+import { db } from "./db";
+import { users, groups, groupMembers } from "./shared/schema";
+import { eq, and } from "drizzle-orm";
 import { setupAuth } from "./auth";
 import type { Request, Response, NextFunction } from "express";
 
@@ -227,22 +231,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Daily Challenge Endpoint
+  // Daily Challenge — cached in memory, refreshes once per day
+  let _dailyProblemCache: { problem: any; date: string } | null = null;
+
   async function getDailyProblem() {
-    // Deterministic selection based on date
-    const allProblems = [];
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (_dailyProblemCache?.date === todayStr) return _dailyProblemCache.problem;
+
+    const allProblems: any[] = [];
     const contests = await storage.getAllContests();
-    for (const contest of contests) {
-      const contestProblems = await storage.getProblemsByContest(contest.id);
-      allProblems.push(...contestProblems);
-    }
+    await Promise.all(contests.map(async (contest) => {
+      const problems = await storage.getProblemsByContest(contest.id);
+      allProblems.push(...problems);
+    }));
 
     if (allProblems.length === 0) return null;
 
     const today = new Date();
     const hash = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-    const index = hash % allProblems.length;
-    return allProblems[index];
+    const problem = allProblems[hash % allProblems.length];
+    _dailyProblemCache = { problem, date: todayStr };
+    return problem;
   }
 
   app.get("/api/daily-challenge", async (req, res) => {
@@ -784,6 +793,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ==================== END CHALLENGE ROUTES ====================
 
+
+  // ── Platform Handles — save ───────────────────────────────────────────────
+  app.patch("/api/user/handles", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const { cfHandle, lcHandle, ccHandle, atHandle, hrHandle, gfgHandle } = req.body;
+      await db.update(users)
+        .set({
+          cfHandle:  cfHandle  ?? null,
+          lcHandle:  lcHandle  ?? null,
+          ccHandle:  ccHandle  ?? null,
+          atHandle:  atHandle  ?? null,
+          hrHandle:  hrHandle  ?? null,
+          gfgHandle: gfgHandle ?? null,
+        })
+        .where(eq(users.id, req.user.id));
+      const updated = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      res.json(updated[0]);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Platform Stats — fetch live from all APIs ─────────────────────────────
+  app.get("/api/user/platform-stats", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const rows = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      const u = rows[0];
+      if (!u) return res.status(404).json({ error: "User not found" });
+
+      const stats = await fetchAllPlatformStats({
+        cf:  u.cfHandle,
+        lc:  u.lcHandle,
+        cc:  u.ccHandle,
+        at:  u.atHandle,
+        hr:  u.hrHandle,
+        gfg: u.gfgHandle,
+      });
+      res.json(stats);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Get saved handles ─────────────────────────────────────────────────────
+  app.get("/api/user/handles", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const rows = await db.select({
+        cfHandle: users.cfHandle, lcHandle: users.lcHandle,
+        ccHandle: users.ccHandle, atHandle: users.atHandle,
+        hrHandle: users.hrHandle, gfgHandle: users.gfgHandle,
+      }).from(users).where(eq(users.id, req.user.id)).limit(1);
+      res.json(rows[0] ?? {});
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Group Tracker Routes ──────────────────────────────────────────────────
+
+  // Create a group
+  app.post("/api/groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const { name, description } = req.body;
+      if (!name?.trim()) return res.status(400).json({ error: "Group name required" });
+      const inviteCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const [group] = await db.insert(groups).values({
+        name: name.trim(), description: description?.trim() || null,
+        inviteCode, createdBy: req.user.id,
+      }).returning();
+      // Auto-join creator
+      const u = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      await db.insert(groupMembers).values({
+        groupId: group.id, userId: req.user.id,
+        cfHandle: u[0]?.cfHandle, lcHandle: u[0]?.lcHandle, ccHandle: u[0]?.ccHandle,
+      });
+      res.status(201).json(group);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Get my groups
+  app.get("/api/groups", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const myMemberships = await db.select({ groupId: groupMembers.groupId })
+        .from(groupMembers).where(eq(groupMembers.userId, req.user.id));
+      if (!myMemberships.length) return res.json([]);
+      const ids = myMemberships.map(m => m.groupId);
+      const result = await Promise.all(ids.map(id =>
+        db.select().from(groups).where(eq(groups.id, id)).limit(1).then(r => r[0])
+      ));
+      res.json(result.filter(Boolean));
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Join via invite code
+  app.post("/api/groups/join", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const { inviteCode } = req.body;
+      const [group] = await db.select().from(groups).where(eq(groups.inviteCode, inviteCode.toUpperCase().trim()));
+      if (!group) return res.status(404).json({ error: "Invalid invite code" });
+      const existing = await db.select().from(groupMembers)
+        .where(and(eq(groupMembers.groupId, group.id), eq(groupMembers.userId, req.user.id)));
+      if (existing.length) return res.status(400).json({ error: "Already a member" });
+      const u = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      await db.insert(groupMembers).values({
+        groupId: group.id, userId: req.user.id,
+        cfHandle: u[0]?.cfHandle, lcHandle: u[0]?.lcHandle, ccHandle: u[0]?.ccHandle,
+      });
+      res.json(group);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Get group leaderboard — fetches live stats for all members
+  app.get("/api/groups/:id/leaderboard", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const [group] = await db.select().from(groups).where(eq(groups.id, req.params.id));
+      if (!group) return res.status(404).json({ error: "Group not found" });
+
+      const members = await db.select({
+        userId: groupMembers.userId, cfHandle: groupMembers.cfHandle,
+        lcHandle: groupMembers.lcHandle, ccHandle: groupMembers.ccHandle,
+      }).from(groupMembers).where(eq(groupMembers.groupId, req.params.id));
+
+      // Fetch stats for each member in parallel
+      const { fetchAllPlatformStats } = await import("./platformStats");
+      const leaderboard = await Promise.all(members.map(async (m) => {
+        const userRow = await db.select({ username: users.username })
+          .from(users).where(eq(users.id, m.userId)).limit(1);
+        const username = userRow[0]?.username ?? "Unknown";
+        const stats = await fetchAllPlatformStats({
+          cf: m.cfHandle, lc: m.lcHandle, cc: m.ccHandle,
+        }).catch(() => []);
+        const totalSolved = stats.reduce((s, p) => s + (p.error ? 0 : p.solved), 0);
+        const totalContests = stats.reduce((s, p) => s + (p.error ? 0 : p.contests), 0);
+        const cfRating = stats.find(p => p.platform === "Codeforces")?.rating ?? null;
+        const lcRating = stats.find(p => p.platform === "LeetCode")?.rating ?? null;
+        return { userId: m.userId, username, totalSolved, totalContests, cfRating, lcRating, platforms: stats.filter(p => !p.error).length };
+      }));
+
+      leaderboard.sort((a, b) => b.totalSolved - a.totalSolved);
+      res.json({ group, leaderboard });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // Leave group
+  app.delete("/api/groups/:id/leave", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      await db.delete(groupMembers).where(
+        and(eq(groupMembers.groupId, req.params.id), eq(groupMembers.userId, req.user.id))
+      );
+      res.json({ success: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
 
   // ── WhatsApp Test Route ──────────────────────────────────────────────────
   app.get("/api/test-whatsapp", async (req, res) => {

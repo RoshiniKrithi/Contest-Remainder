@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { registerRoutes } from "./routes";
 import { log } from "./log";
+import { isDbReady, dbReady } from "./db";
 
 const app = express();
 
@@ -66,9 +67,20 @@ app.get("/", (req, res) => {
     res.send("Backend running 🚀");
 });
 
-// Health check endpoint
+// Health check — always responds even when DB is down
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running" });
+    res.json({ status: "ok", message: "Server is running", dbReady: isDbReady() });
+});
+
+// DB readiness gate — returns 503 for /api/* routes while DB is connecting
+app.use("/api", (req, res, next) => {
+    // Allow health check and auth-free endpoints through
+    const bypass = ["/api/health", "/api/login", "/api/register", "/api/logout"];
+    if (bypass.some(p => req.path === p || req.originalUrl.startsWith(p))) return next();
+    if (!isDbReady()) {
+        return res.status(503).json({ message: "Server is starting up, please retry in a moment" });
+    }
+    next();
 });
 
 
