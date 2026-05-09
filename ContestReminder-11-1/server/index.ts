@@ -3,14 +3,17 @@ import { initializeApp, app } from "./app";
 import { log } from "./log";
 import { setupContestScheduler } from "./scheduler";
 import { setupNotificationScheduler } from "./notificationScheduler";
+import { dbReady } from "./db";
 
 async function startServer() {
-  const server = await initializeApp();
+  // Wait for DB to resolve DNS and initialise pool
+  await dbReady;
 
+  const server = await initializeApp();
   const PORT = Number(process.env.PORT) || 5000;
 
   server.listen(PORT, "0.0.0.0", () => {
-    log(`🚀 Global server heart-beat detected on port ${PORT}`);
+    log(`🚀 Server running on port ${PORT}`);
     setupContestScheduler();
     setupNotificationScheduler();
   });

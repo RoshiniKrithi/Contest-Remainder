@@ -13,6 +13,10 @@ const dbUrl = new URL(process.env.DATABASE_URL);
 const dbHost = dbUrl.hostname;
 
 function resolveWithGoogleDns(hostname: string): Promise<string> {
+  // On Render/production, system DNS works fine — skip custom resolver
+  if (process.env.NODE_ENV === "production") {
+    return Promise.resolve(hostname);
+  }
   return new Promise((resolve) => {
     const resolver = new dns.Resolver();
     resolver.setServers(["8.8.8.8", "1.1.1.1"]);
@@ -61,9 +65,22 @@ async function initDb(retries = 3): Promise<void> {
   if (_ready || _initialising) return;
   _initialising = true;
   try {
-    const resolvedHost = await resolveWithGoogleDns(dbHost);
-    const pool = createPool(resolvedHost);
-    // Verify connection works
+    let pool: pg.Pool;
+    if (process.env.NODE_ENV === "production") {
+      // On Render — use connection string directly, DNS works fine
+      pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+        connectionTimeoutMillis: 10000,
+        idleTimeoutMillis: 30000,
+        max: 5,
+      });
+      pool.on("error", (err) => console.error("❌ DB pool error:", err.message));
+    } else {
+      // Local dev — system DNS may not resolve Neon, use Google DNS
+      const resolvedHost = await resolveWithGoogleDns(dbHost);
+      pool = createPool(resolvedHost);
+    }
     await pool.query("SELECT 1");
     _pool = pool;
     _db = drizzle(_pool, { schema });

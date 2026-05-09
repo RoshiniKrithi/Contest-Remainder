@@ -2077,12 +2077,15 @@ export class DatabaseStorage implements IStorage {
   constructor(dbInstance: any) {
     this.db = dbInstance;
 
-    const PgStore = connectPgSimple(session);
-    this.sessionStore = new PgStore({
-      pool: pool,
-      tableName: 'session',
-      createTableIfMissing: true
+    // Use file-based session store — works without DB, survives restarts
+    const FileStore = require("session-file-store")(session);
+    this.sessionStore = new FileStore({
+      path: "./sessions",
+      ttl: 86400,
+      retries: 0,
+      logFn: () => {},
     });
+
     this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
     this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));
     this.seedChallengeData().catch(err => console.error("Challenge seeding failed:", err));
