@@ -2084,13 +2084,17 @@ export class DatabaseStorage implements IStorage {
   constructor(dbInstance: any) {
     this.db = dbInstance;
 
-    // Use MemoryStore for sessions in production (file store not available on Render)
     const MemStore = (createMemoryStore as any)(session);
     this.sessionStore = new MemStore({ checkPeriod: 86400000 });
 
-    this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
-    this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));
-    this.seedChallengeData().catch(err => console.error("Challenge seeding failed:", err));
+    // Wait for DB to be ready before running init tasks
+    import("./db").then(({ dbReady }) => {
+      dbReady.then(() => {
+        this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
+        this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));
+        this.seedChallengeData().catch(err => console.error("Challenge seeding failed:", err));
+      });
+    });
   }
 
   async seedChallengeData() {
