@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Code, Home, Globe, GraduationCap, Flame, Gamepad2 } from "lucide-react";
+import { Code, Home, Globe, GraduationCap, Flame, Gamepad2, User, Users } from "lucide-react";
 import { UserDropdown } from "./user-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +36,7 @@ export default function Navbar() {
     { path: "/reminders", label: "Live Contests", icon: Globe },
     { path: "/challenges", label: "Challenges", icon: Gamepad2 },
     { path: "/courses", label: "Courses", icon: GraduationCap },
+    { path: "/profile", label: "Profile", icon: User },
   ];
 
   return (

@@ -20,7 +20,7 @@ const Card = React.forwardRef<
 ))
 Card.displayName = "Card"
 
-const MotionCard = motion(Card);
+const MotionCard = motion.create(Card);
 
 // Magnetic Card with motion
 const MagneticCard = React.forwardRef<
