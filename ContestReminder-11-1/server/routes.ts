@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           atHandle:  atHandle  ?? null,
           hrHandle:  hrHandle  ?? null,
           gfgHandle: gfgHandle ?? null,
-        })
+        } as any)
         .where(eq(users.id, req.user.id));
       const updated = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
       res.json(updated[0]);
@@ -865,13 +865,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [group] = await db.insert(groups).values({
         name: name.trim(), description: description?.trim() || null,
         inviteCode, createdBy: req.user.id,
-      }).returning();
+      } as any).returning();
       // Auto-join creator
       const u = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
       await db.insert(groupMembers).values({
         groupId: group.id, userId: req.user.id,
         cfHandle: u[0]?.cfHandle, lcHandle: u[0]?.lcHandle, ccHandle: u[0]?.ccHandle,
-      });
+      } as any);
       res.status(201).json(group);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -905,7 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.insert(groupMembers).values({
         groupId: group.id, userId: req.user.id,
         cfHandle: u[0]?.cfHandle, lcHandle: u[0]?.lcHandle, ccHandle: u[0]?.ccHandle,
-      });
+      } as any);
       res.json(group);
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
@@ -931,8 +931,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const stats = await fetchAllPlatformStats({
           cf: m.cfHandle, lc: m.lcHandle, cc: m.ccHandle,
         }).catch(() => []);
-        const totalSolved = stats.reduce((s, p) => s + (p.error ? 0 : p.solved), 0);
-        const totalContests = stats.reduce((s, p) => s + (p.error ? 0 : p.contests), 0);
+        const totalSolved = stats.reduce((s: number, p: any) => s + (p.error ? 0 : p.solved), 0);
+        const totalContests = stats.reduce((s: number, p: any) => s + (p.error ? 0 : p.contests), 0);
         const cfRating = stats.find(p => p.platform === "Codeforces")?.rating ?? null;
         const lcRating = stats.find(p => p.platform === "LeetCode")?.rating ?? null;
         return { userId: m.userId, username, totalSolved, totalContests, cfRating, lcRating, platforms: stats.filter(p => !p.error).length };

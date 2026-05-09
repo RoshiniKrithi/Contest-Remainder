@@ -364,7 +364,13 @@ export class MemStorage implements IStorage {
       role: "admin",
       streak: 0,
       googleId: null,
-      lastDailySolve: null
+      lastDailySolve: null,
+      cfHandle: null,
+      lcHandle: null,
+      ccHandle: null,
+      atHandle: null,
+      hrHandle: null,
+      gfgHandle: null,
     };
 
     this.users.set(id, adminUser);
