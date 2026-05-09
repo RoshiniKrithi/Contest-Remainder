@@ -40,7 +40,8 @@ import {
 import { randomUUID } from "crypto";
 import { typingChallenges as typingSeed, quizQuestions as quizSeed, brainTeasers as teaserSeed } from "./challenge-seed-data";
 import session from "express-session";
-const createMemoryStore = require("memorystore");
+import memorystore from "memorystore";
+const createMemoryStore = memorystore;
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 
@@ -2077,14 +2078,9 @@ export class DatabaseStorage implements IStorage {
   constructor(dbInstance: any) {
     this.db = dbInstance;
 
-    // Use file-based session store — works without DB, survives restarts
-    const FileStore = require("session-file-store")(session);
-    this.sessionStore = new FileStore({
-      path: "./sessions",
-      ttl: 86400,
-      retries: 0,
-      logFn: () => {},
-    });
+    // Use MemoryStore for sessions in production (file store not available on Render)
+    const MemStore = (createMemoryStore as any)(session);
+    this.sessionStore = new MemStore({ checkPeriod: 86400000 });
 
     this.autoPatchDatabase().catch(err => console.error("Auto-patch failed:", err));
     this.initializeAdminUser().catch(err => console.error("Admin initialization failed:", err));

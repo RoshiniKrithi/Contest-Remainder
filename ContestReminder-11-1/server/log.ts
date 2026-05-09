@@ -7,11 +7,4 @@ export function log(message: string, source = "express") {
   });
 
   console.log(`${formattedTime} [${source}] ${message}`);
-  
-  try {
-    const fs = require('fs');
-    fs.appendFileSync('debug-backend.log', `${formattedTime} [${source}] ${message}\n`);
-  } catch (e) {
-    console.error("Failed to write log", e);
-  }
 }
