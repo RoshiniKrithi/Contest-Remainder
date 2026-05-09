@@ -928,14 +928,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userRow = await db.select({ username: users.username })
           .from(users).where(eq(users.id, m.userId)).limit(1);
         const username = userRow[0]?.username ?? "Unknown";
-        const stats = await fetchAllPlatformStats({
+        const stats = (await fetchAllPlatformStats({
           cf: m.cfHandle, lc: m.lcHandle, cc: m.ccHandle,
-        }).catch(() => []);
+        }).catch(() => [])) as any[];
         const totalSolved = stats.reduce((s: number, p: any) => s + (p.error ? 0 : p.solved), 0);
         const totalContests = stats.reduce((s: number, p: any) => s + (p.error ? 0 : p.contests), 0);
-        const cfRating = stats.find(p => p.platform === "Codeforces")?.rating ?? null;
-        const lcRating = stats.find(p => p.platform === "LeetCode")?.rating ?? null;
-        return { userId: m.userId, username, totalSolved, totalContests, cfRating, lcRating, platforms: stats.filter(p => !p.error).length };
+        const cfRating = stats.find((p: any) => p.platform === "Codeforces")?.rating ?? null;
+        const lcRating = stats.find((p: any) => p.platform === "LeetCode")?.rating ?? null;
+        return { userId: m.userId, username, totalSolved, totalContests, cfRating, lcRating, platforms: stats.filter((p: any) => !p.error).length };
       }));
 
       leaderboard.sort((a, b) => b.totalSolved - a.totalSolved);
