@@ -38,8 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      try {
+        const res = await apiRequest("POST", "/api/login", credentials);
+        return await res.json();
+      } catch (err: any) {
+        throw new Error(err.message?.includes("fetch") ? "Cannot connect to server. Please try again in a moment." : err.message);
+      }
     },
     onSuccess: (user: SelectUser | null) => {
       if (!user) {
