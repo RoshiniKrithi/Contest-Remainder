@@ -21,9 +21,13 @@ export default defineConfig({
   },
 
   build: {
-    // Output goes to repo-root/dist, which matches vercel.json outputDirectory
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
+  },
+
+  define: {
+    // Hardcode the backend URL so it works regardless of env var injection
+    "import.meta.env.VITE_API_URL": JSON.stringify("https://contest-reminder-backend.onrender.com"),
   },
 
   server: {
