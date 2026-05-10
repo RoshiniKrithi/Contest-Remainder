@@ -38,12 +38,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      try {
-        const res = await apiRequest("POST", "/api/login", credentials);
-        return await res.json();
-      } catch (err: any) {
-        throw new Error(err.message?.includes("fetch") ? "Cannot connect to server. Please try again in a moment." : err.message);
+      // Render free tier sleeps — retry up to 3 times with 15s timeout each
+      const API = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+      let lastErr: any;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 20000); // 20s timeout
+          const res = await fetch(`${API}/api/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(credentials),
+            credentials: "include",
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`${res.status}: ${text}`);
+          }
+          return await res.json();
+        } catch (err: any) {
+          lastErr = err;
+          if (attempt < 3 && (err.name === "AbortError" || err.message?.includes("fetch"))) {
+            // Server waking up — wait 5s and retry
+            await new Promise(r => setTimeout(r, 5000));
+            continue;
+          }
+          break;
+        }
       }
+      const msg = lastErr?.name === "AbortError" || lastErr?.message?.includes("fetch")
+        ? "Server is waking up (free tier). Please wait 30 seconds and try again."
+        : lastErr?.message || "Login failed";
+      throw new Error(msg);
     },
     onSuccess: (user: SelectUser | null) => {
       if (!user) {

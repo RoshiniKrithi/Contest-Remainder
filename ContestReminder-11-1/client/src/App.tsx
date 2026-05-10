@@ -13,6 +13,12 @@ import AdminDashboard from "@/pages/admin/dashboard";
 import AdminUserList from "@/pages/admin/user-list";
 import AdminUserDetail from "@/pages/admin/user-detail";
 import Dashboard from "@/pages/dashboard";
+
+// Wake up Render backend immediately when app loads (free tier sleeps after 15min)
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+if (API_BASE) {
+  fetch(`${API_BASE}/api/health`, { method: "GET" }).catch(() => {});
+}
 import Contests from "@/pages/contests";
 import Courses from "@/pages/courses";
 import ContestDetail from "@/pages/contest-detail";
