@@ -69,7 +69,7 @@ app.get("/", (req, res) => {
 
 // Health check — always responds even when DB is down
 app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", message: "Server is running", dbReady: isDbReady() });
+    res.json({ status: "ok", message: "Server is running", dbReady: isDbReady(), env: process.env.NODE_ENV, render: !!process.env.RENDER });
 });
 
 // DB readiness gate — returns 503 for /api/* routes while DB is connecting

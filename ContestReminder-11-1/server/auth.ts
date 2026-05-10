@@ -38,7 +38,9 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  const isProd = process.env.NODE_ENV === "production";
+  // On Render, cookies must be SameSite=None;Secure for cross-domain (Vercel ↔ Render)
+  const isRender = !!process.env.RENDER;
+  const isProd = process.env.NODE_ENV === "production" || isRender;
 
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "codearena-secret-key-change-in-production",
