@@ -4,6 +4,7 @@ import { log } from "./log";
 import { setupContestScheduler } from "./scheduler";
 import { setupNotificationScheduler } from "./notificationScheduler";
 import { dbReady } from "./db";
+import { setupKeepAlive } from "./keepAlive";
 
 async function startServer() {
   // Wait for DB to resolve DNS and initialise pool
@@ -16,6 +17,7 @@ async function startServer() {
     log(`🚀 Server running on port ${PORT}`);
     setupContestScheduler();
     setupNotificationScheduler();
+    setupKeepAlive();
   });
 }
 
