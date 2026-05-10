@@ -63,6 +63,19 @@ const sql = `
     joined_at TIMESTAMP DEFAULT now(),
     UNIQUE(group_id, user_id)
   );
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS slug TEXT UNIQUE;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS constraints TEXT;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS input_format TEXT;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS output_format TEXT;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS examples JSONB DEFAULT '[]';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS hints JSONB DEFAULT '[]';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS tags JSONB DEFAULT '[]';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS companies JSONB DEFAULT '[]';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS editorial TEXT;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS starter_code JSONB DEFAULT '{}';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS visible_test_cases JSONB DEFAULT '[]';
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS acceptance_rate INTEGER DEFAULT 0;
+  ALTER TABLE problems ADD COLUMN IF NOT EXISTS daily_date TEXT;
 `;
 
 try {

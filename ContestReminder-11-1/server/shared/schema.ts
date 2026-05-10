@@ -81,13 +81,27 @@ export const bookmarks = pgTable("bookmarks", {
 export const problems = pgTable("problems", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   contestId: varchar("contest_id").notNull(),
+  slug: text("slug").unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  difficulty: text("difficulty").notNull(), // easy, medium, hard
+  difficulty: text("difficulty").notNull(),
   points: integer("points").notNull().default(100),
-  testCases: jsonb("test_cases").notNull(), // Array of {input, output}
-  timeLimit: integer("time_limit").default(2000), // milliseconds
-  memoryLimit: integer("memory_limit").default(256), // MB
+  // Rich content — all stored as JSONB
+  constraints: text("constraints"),
+  inputFormat: text("input_format"),
+  outputFormat: text("output_format"),
+  examples: jsonb("examples").default([]),        // [{input, output, explanation}]
+  hints: jsonb("hints").default([]),              // [string]
+  tags: jsonb("tags").default([]),                // [string]
+  companies: jsonb("companies").default([]),      // [string]
+  editorial: text("editorial"),
+  starterCode: jsonb("starter_code").default({}), // {javascript, python, cpp, java, c}
+  testCases: jsonb("test_cases").notNull(),        // [{input, output}] — hidden
+  visibleTestCases: jsonb("visible_test_cases").default([]), // [{input, output}] — shown
+  acceptanceRate: integer("acceptance_rate").default(0),
+  timeLimit: integer("time_limit").default(2000),
+  memoryLimit: integer("memory_limit").default(256),
+  dailyDate: text("daily_date"),                  // "YYYY-MM-DD" if this is a daily problem
 });
 
 export const submissions = pgTable("submissions", {

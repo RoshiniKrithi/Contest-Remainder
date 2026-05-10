@@ -13,6 +13,7 @@ import {
 import { ContestService, isAllowedPlatform } from "./contest-apis";
 import { sendWhatsAppReminder, isTwilioConfigured } from "./whatsappService";
 import { fetchAllPlatformStats } from "./platformStats";
+import { executeCode, LANGUAGE_IDS } from "./judge";
 import { db } from "./db";
 import { users, groups, groupMembers } from "./shared/schema";
 import { eq, and } from "drizzle-orm";
@@ -848,6 +849,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
         hrHandle: users.hrHandle, gfgHandle: users.gfgHandle,
       }).from(users).where(eq(users.id, req.user.id)).limit(1);
       res.json(rows[0] ?? {});
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Code Execution Routes ─────────────────────────────────────────────────
+
+  // Run code (test against custom input)
+  app.post("/api/execute", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const { code, language, stdin } = req.body;
+      if (!code || !language) return res.status(400).json({ error: "code and language required" });
+      if (!LANGUAGE_IDS[language]) return res.status(400).json({ error: `Unsupported language: ${language}` });
+
+      const result = await executeCode(code, language, stdin || "");
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Submit solution (run against all test cases)
+  app.post("/api/problems/:id/submit", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    try {
+      const { code, language } = req.body;
+      if (!code || !language) return res.status(400).json({ error: "code and language required" });
+
+      const problem = await storage.getProblem(req.params.id);
+      if (!problem) return res.status(404).json({ error: "Problem not found" });
+
+      const testCases = (problem.testCases as any[]) || [];
+      const results = [];
+      let allPassed = true;
+      let totalTime = 0;
+      let maxMemory = 0;
+
+      for (const tc of testCases.slice(0, 5)) { // max 5 test cases
+        const result = await executeCode(code, language, tc.input, tc.output);
+        const passed = result.statusId === 3;
+        if (!passed) allPassed = false;
+        if (result.time) totalTime += parseFloat(result.time);
+        if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
+        results.push({ input: tc.input, expected: tc.output, actual: result.stdout, passed, status: result.status });
+      }
+
+      const verdict = allPassed ? "Accepted" : results.find(r => !r.passed)?.status || "Wrong Answer";
+
+      // Save submission
+      const submission = await storage.createSubmission({
+        problemId: req.params.id,
+        userId: req.user.id,
+        contestId: problem.contestId,
+        code,
+        language,
+        status: verdict.toLowerCase().replace(/ /g, "_"),
+      });
+
+      if (allPassed) {
+        await storage.updateSubmissionStatus(submission.id, "accepted", problem.points);
+        await storage.trackUserActivity(req.user.id, 15, 1);
+      } else {
+        await storage.updateSubmissionStatus(submission.id, verdict.toLowerCase().replace(/ /g, "_"), 0);
+      }
+
+      res.json({
+        verdict,
+        passed: results.filter(r => r.passed).length,
+        total: results.length,
+        time: totalTime.toFixed(3),
+        memory: maxMemory,
+        results,
+        submissionId: submission.id,
+      });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
