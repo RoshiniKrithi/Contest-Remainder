@@ -25,10 +25,12 @@ export default defineConfig({
     emptyOutDir: true,
   },
 
-  define: {
-    // Hardcode the backend URL so it works regardless of env var injection
-    "import.meta.env.VITE_API_URL": JSON.stringify("https://contest-reminder-backend.onrender.com"),
-  },
+  // Only inject backend URL in production builds — dev uses Vite proxy
+  ...(process.env.NODE_ENV === "production" ? {
+    define: {
+      "import.meta.env.VITE_API_URL": JSON.stringify("https://contest-reminder-backend.onrender.com"),
+    },
+  } : {}),
 
   server: {
     port: 5005,

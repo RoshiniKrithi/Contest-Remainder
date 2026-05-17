@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import ParticlesBackground from "@/components/layout/particles-background";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/page-transition";
 import Editor from "@monaco-editor/react";
@@ -138,11 +138,23 @@ export default function ProblemDetail() {
   const [runResult, setRunResult] = useState<ExecutionResult | null>(null);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [inputInitialized, setInputInitialized] = useState(false);
 
   const { data: problem, isLoading } = useQuery<Problem>({
     queryKey: [`/api/problems/${id}`],
     enabled: !!id,
   });
+
+  // Auto-fill first sample test case once problem loads
+  useEffect(() => {
+    if (problem && !inputInitialized) {
+      const firstTc = (problem.testCases as any[])?.[0];
+      if (firstTc?.input) {
+        setCustomInput(firstTc.input);
+        setInputInitialized(true);
+      }
+    }
+  }, [problem, inputInitialized]);
 
   const handleLanguageChange = useCallback((lang: string) => {
     setLanguage(lang);
@@ -258,7 +270,40 @@ export default function ProblemDetail() {
                 </CardHeader>
                 <Separator className="bg-white/5" />
                 <CardContent className="flex-1 overflow-y-auto p-5">
-                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{problem.description}</p>
+                  {/* Split description and hints */}
+                  {(() => {
+                    const desc = problem.description || "";
+                    const hintIdx = desc.indexOf("Hints:");
+                    const mainDesc = hintIdx > -1 ? desc.slice(0, hintIdx).trim() : desc;
+                    const hintsText = hintIdx > -1 ? desc.slice(hintIdx) : "";
+                    const hints = hintsText.match(/💡 Hint \d+:[^\n💡]*/g)?.map(h => h.trim()) || [];
+
+                    return (
+                      <>
+                        <div className="prose prose-invert max-w-none">
+                          <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{mainDesc}</p>
+                        </div>
+
+                        {hints.length > 0 && (
+                          <div className="mt-6 space-y-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Hints</p>
+                            {hints.map((hint, i) => (
+                              <details key={i} className="group bg-slate-950/60 border border-white/5 rounded-xl overflow-hidden">
+                                <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer text-xs font-black text-amber-400 hover:bg-white/5 transition-colors list-none">
+                                  <span className="text-amber-400">💡</span>
+                                  <span>Hint {i + 1}</span>
+                                  <ChevronDown className="h-3.5 w-3.5 ml-auto group-open:rotate-180 transition-transform" />
+                                </summary>
+                                <div className="px-4 pb-3 text-xs text-slate-300 leading-relaxed border-t border-white/5 pt-3">
+                                  {hint.replace(/^💡 Hint \d+:\s*/, "")}
+                                </div>
+                              </details>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {sampleTestCases.length > 0 && (
                     <div className="mt-6 space-y-3">
@@ -363,7 +408,7 @@ export default function ProblemDetail() {
             </div>
 
             {/* Console panel */}
-            <div className="shrink-0 bg-slate-900/60 border border-white/5 rounded-xl overflow-hidden" style={{ height: "200px" }}>
+            <div className="shrink-0 bg-slate-900/60 border border-white/5 rounded-xl overflow-hidden" style={{ height: "240px" }}>
               {/* Tabs */}
               <div className="flex items-center border-b border-white/5">
                 {["testcase", "output"].map(tab => (
@@ -381,54 +426,106 @@ export default function ProblemDetail() {
 
               <div className="p-3 h-[calc(100%-40px)] overflow-y-auto">
                 {activeTab === "testcase" ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Custom Input</p>
-                    <textarea
-                      value={customInput}
-                      onChange={e => setCustomInput(e.target.value)}
-                      placeholder="Enter custom input here..."
-                      className="w-full h-24 bg-slate-950/60 border border-white/5 rounded-lg p-3 text-xs font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500/50"
-                    />
+                  <div className="space-y-3">
+                    {/* Sample test case tabs */}
+                    {sampleTestCases.length > 0 && (
+                      <div className="flex gap-2 flex-wrap">
+                        {sampleTestCases.map((tc: any, i: number) => (
+                          <button key={i}
+                            onClick={() => setCustomInput(tc.input)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-colors ${customInput === tc.input ? "bg-blue-500/20 border-blue-500/40 text-blue-400" : "bg-white/5 border-white/10 text-slate-400 hover:text-white"}`}>
+                            Case {i + 1}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Input</p>
+                      <textarea
+                        value={customInput}
+                        onChange={e => setCustomInput(e.target.value)}
+                        placeholder="Enter custom input here..."
+                        className="w-full h-20 bg-slate-950/60 border border-white/5 rounded-lg p-3 text-xs font-mono text-slate-300 resize-none focus:outline-none focus:border-blue-500/50"
+                      />
+                    </div>
+                    {/* Show expected output for selected sample */}
+                    {sampleTestCases.find((tc: any) => tc.input === customInput) && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Expected Output</p>
+                        <pre className="text-emerald-400 bg-slate-950/60 border border-white/5 rounded-lg p-3 text-xs">
+                          {(sampleTestCases.find((tc: any) => tc.input === customInput) as any)?.output}
+                        </pre>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="space-y-2 font-mono text-xs">
-                    {/* Run result */}
+                  <div className="space-y-3 font-mono text-xs">
+                    {/* Run result — LeetCode style */}
                     {runResult && !submitResult && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
+                        {/* Status bar */}
                         <div className="flex items-center gap-3">
                           <VerdictBadge verdict={runResult.status} />
-                          {runResult.time && <span className="text-slate-500">⏱ {runResult.time}s</span>}
-                          {runResult.memory && <span className="text-slate-500">💾 {(runResult.memory / 1024).toFixed(1)}MB</span>}
+                          {runResult.time && <span className="text-slate-500 text-[10px]">⏱ {runResult.time}s</span>}
+                          {runResult.memory && <span className="text-slate-500 text-[10px]">💾 {(runResult.memory / 1024).toFixed(1)}MB</span>}
                         </div>
-                        {runResult.stdout && (
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Output</p>
-                            <pre className="text-emerald-400 bg-slate-950/60 p-2 rounded-lg">{runResult.stdout}</pre>
+
+                        {/* Input / Output / Expected — 3 column layout like LeetCode */}
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="bg-slate-950/80 border border-white/5 rounded-lg p-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Input</p>
+                            <pre className="text-slate-300 text-xs whitespace-pre-wrap">{customInput || "(no input)"}</pre>
                           </div>
-                        )}
-                        {(runResult.stderr || runResult.compile_output) && (
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-rose-500 mb-1">Error</p>
-                            <pre className="text-rose-400 bg-slate-950/60 p-2 rounded-lg">{runResult.stderr || runResult.compile_output}</pre>
+                          <div className="bg-slate-950/80 border border-white/5 rounded-lg p-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5">Output</p>
+                            <pre className={`text-xs whitespace-pre-wrap ${runResult.stdout ? "text-emerald-400" : "text-slate-600 italic"}`}>
+                              {runResult.stdout?.trim() || "(no output)"}
+                            </pre>
                           </div>
-                        )}
+                          {(runResult.stderr || runResult.compile_output) && (
+                            <div className="bg-rose-950/30 border border-rose-500/20 rounded-lg p-3">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-1.5">
+                                {runResult.compile_output ? "Compilation Error" : "Runtime Error"}
+                              </p>
+                              <pre className="text-rose-400 text-xs whitespace-pre-wrap">{runResult.stderr || runResult.compile_output}</pre>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
 
-                    {/* Submit result */}
+                    {/* Submit result — test case breakdown */}
                     {submitResult && (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="flex items-center gap-3 flex-wrap">
                           <VerdictBadge verdict={submitResult.verdict} />
-                          <span className="text-slate-400">{submitResult.passed}/{submitResult.total} passed</span>
-                          <span className="text-slate-500">⏱ {submitResult.time}s</span>
-                          <span className="text-slate-500">💾 {(submitResult.memory / 1024).toFixed(1)}MB</span>
+                          <span className="text-slate-400 text-[10px]">{submitResult.passed}/{submitResult.total} test cases passed</span>
+                          <span className="text-slate-500 text-[10px]">⏱ {submitResult.time}s</span>
+                          <span className="text-slate-500 text-[10px]">💾 {(submitResult.memory / 1024).toFixed(1)}MB</span>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           {submitResult.results.map((r, i) => (
-                            <div key={i} className={`flex items-center gap-2 px-2 py-1 rounded-lg text-[10px] ${r.passed ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
-                              {r.passed ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
-                              Test {i + 1}: {r.status}
+                            <div key={i} className={`rounded-lg border overflow-hidden ${r.passed ? "border-emerald-500/20 bg-emerald-950/20" : "border-rose-500/20 bg-rose-950/20"}`}>
+                              <div className={`flex items-center gap-2 px-3 py-2 text-[10px] font-black uppercase tracking-widest ${r.passed ? "text-emerald-400" : "text-rose-400"}`}>
+                                {r.passed ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                                Test Case {i + 1} — {r.status}
+                              </div>
+                              {!r.passed && (
+                                <div className="grid grid-cols-3 gap-2 px-3 pb-3 text-[10px]">
+                                  <div>
+                                    <p className="text-slate-500 uppercase tracking-widest mb-1">Input</p>
+                                    <pre className="text-slate-300 bg-slate-950/60 p-1.5 rounded">{r.input}</pre>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 uppercase tracking-widest mb-1">Expected</p>
+                                    <pre className="text-emerald-400 bg-slate-950/60 p-1.5 rounded">{r.expected}</pre>
+                                  </div>
+                                  <div>
+                                    <p className="text-slate-500 uppercase tracking-widest mb-1">Your Output</p>
+                                    <pre className="text-rose-400 bg-slate-950/60 p-1.5 rounded">{r.actual ?? "(no output)"}</pre>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
