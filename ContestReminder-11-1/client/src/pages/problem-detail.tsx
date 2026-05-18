@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import ParticlesBackground from "@/components/layout/particles-background";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/page-transition";
 import Editor from "@monaco-editor/react";
@@ -109,9 +109,23 @@ function VerdictBadge({ verdict }: { verdict: string }) {
 }
 
 interface Problem {
-  id: string; title: string; description: string; difficulty: string;
-  points: number; timeLimit: number; memoryLimit: number; contestId: string;
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  points: number;
+  timeLimit: number;
+  memoryLimit: number;
+  contestId: string;
+  constraints?: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  sampleInputs?: string[];
+  sampleOutputs?: string[];
+  explanations?: string[];
+  starterCode?: Record<string, string>;
   testCases?: { input: string; output: string }[];
+  tags?: string[];
 }
 
 interface ExecutionResult {
@@ -139,29 +153,57 @@ export default function ProblemDetail() {
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [inputInitialized, setInputInitialized] = useState(false);
+  const [codeInitialized, setCodeInitialized] = useState(false);
 
   const { data: problem, isLoading } = useQuery<Problem>({
     queryKey: [`/api/problems/${id}`],
     enabled: !!id,
   });
 
+  // Calculate visible samples safely with fallbacks
+  const samples = useMemo(() => {
+    if (problem?.sampleInputs && problem?.sampleInputs.length > 0) {
+      return problem.sampleInputs.map((input, idx) => ({
+        input,
+        output: problem.sampleOutputs?.[idx] || "",
+        explanation: problem.explanations?.[idx] || ""
+      }));
+    }
+    return (problem?.testCases as any[] || []).slice(0, 2).map(tc => ({
+      input: tc.input,
+      output: tc.output,
+      explanation: ""
+    }));
+  }, [problem]);
+
+  // Load starter code once problem is fetched
+  useEffect(() => {
+    if (problem && !codeInitialized) {
+      const startCode = problem.starterCode?.[language] || BOILERPLATE[language];
+      if (startCode) {
+        setCode(startCode);
+        setCodeInitialized(true);
+      }
+    }
+  }, [problem, language, codeInitialized]);
+
   // Auto-fill first sample test case once problem loads
   useEffect(() => {
     if (problem && !inputInitialized) {
-      const firstTc = (problem.testCases as any[])?.[0];
-      if (firstTc?.input) {
-        setCustomInput(firstTc.input);
+      const firstSample = samples?.[0];
+      if (firstSample?.input) {
+        setCustomInput(firstSample.input);
         setInputInitialized(true);
       }
     }
-  }, [problem, inputInitialized]);
+  }, [problem, samples, inputInitialized]);
 
   const handleLanguageChange = useCallback((lang: string) => {
     setLanguage(lang);
-    setCode(BOILERPLATE[lang]);
+    setCode(problem?.starterCode?.[lang] || BOILERPLATE[lang]);
     setRunResult(null);
     setSubmitResult(null);
-  }, []);
+  }, [problem]);
 
   // Run against custom input
   const runMutation = useMutation({
@@ -185,6 +227,7 @@ export default function ProblemDetail() {
     onSuccess: (data: SubmitResult) => {
       setSubmitResult(data);
       setActiveTab("output");
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/daily-challenge"] });
       if (data.verdict === "Accepted") {
         toast({ title: "✅ Accepted!", description: `Passed ${data.passed}/${data.total} test cases in ${data.time}s` });
@@ -218,7 +261,7 @@ export default function ProblemDetail() {
     </div>
   );
 
-  const sampleTestCases = (problem.testCases as any[] || []).slice(0, 2);
+  const sampleTestCases = samples;
 
   return (
     <PageTransition>
@@ -269,14 +312,20 @@ export default function ProblemDetail() {
                   </CardTitle>
                 </CardHeader>
                 <Separator className="bg-white/5" />
-                <CardContent className="flex-1 overflow-y-auto p-5">
+                <CardContent className="flex-1 overflow-y-auto p-5 space-y-6">
                   {/* Split description and hints */}
                   {(() => {
-                    const desc = problem.description || "";
+                    const desc = problem.description || "No problem description available.";
                     const hintIdx = desc.indexOf("Hints:");
                     const mainDesc = hintIdx > -1 ? desc.slice(0, hintIdx).trim() : desc;
-                    const hintsText = hintIdx > -1 ? desc.slice(hintIdx) : "";
-                    const hints = hintsText.match(/💡 Hint \d+:[^\n💡]*/g)?.map(h => h.trim()) || [];
+                    
+                    let hints: string[] = [];
+                    if (Array.isArray(problem.hints) && problem.hints.length > 0) {
+                      hints = problem.hints;
+                    } else if (hintIdx > -1) {
+                      const hintsText = desc.slice(hintIdx);
+                      hints = hintsText.match(/💡 Hint \d+:[^\n💡]*/g)?.map(h => h.trim().replace(/^💡 Hint \d+:\s*/, "")) || [];
+                    }
 
                     return (
                       <>
@@ -284,8 +333,60 @@ export default function ProblemDetail() {
                           <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{mainDesc}</p>
                         </div>
 
+                        {problem.inputFormat && (
+                          <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Input Format</h3>
+                            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{problem.inputFormat}</p>
+                          </div>
+                        )}
+
+                        {problem.outputFormat && (
+                          <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Output Format</h3>
+                            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">{problem.outputFormat}</p>
+                          </div>
+                        )}
+
+                        {problem.constraints && (
+                          <div>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Constraints</h3>
+                            <pre className="text-slate-300 font-mono text-xs bg-slate-950/40 border border-white/5 rounded-xl p-3 leading-relaxed whitespace-pre-line">
+                              {problem.constraints}
+                            </pre>
+                          </div>
+                        )}
+
+                        {samples.length > 0 && (
+                          <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Sample Test Cases</h3>
+                            {samples.map((sample, idx) => (
+                              <div key={idx} className="bg-slate-950/60 border border-white/5 rounded-xl p-5 space-y-4">
+                                <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Sample Case {idx + 1}</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sample Input</span>
+                                    <pre className="text-emerald-400 font-mono text-xs mt-1.5 bg-slate-900/50 p-2.5 rounded-lg border border-white/5">{sample.input}</pre>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sample Output</span>
+                                    <pre className="text-blue-400 font-mono text-xs mt-1.5 bg-slate-900/50 p-2.5 rounded-lg border border-white/5">{sample.output}</pre>
+                                  </div>
+                                </div>
+                                {sample.explanation && (
+                                  <div className="bg-slate-900/40 border-t border-white/5 pt-3">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Explanation</span>
+                                    <p className="text-slate-300 text-xs mt-1 leading-relaxed">{sample.explanation}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
                         {hints.length > 0 && (
-                          <div className="mt-6 space-y-2">
+                          <div className="space-y-2">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Hints</p>
                             {hints.map((hint, i) => (
                               <details key={i} className="group bg-slate-950/60 border border-white/5 rounded-xl overflow-hidden">
@@ -295,7 +396,7 @@ export default function ProblemDetail() {
                                   <ChevronDown className="h-3.5 w-3.5 ml-auto group-open:rotate-180 transition-transform" />
                                 </summary>
                                 <div className="px-4 pb-3 text-xs text-slate-300 leading-relaxed border-t border-white/5 pt-3">
-                                  {hint.replace(/^💡 Hint \d+:\s*/, "")}
+                                  {hint}
                                 </div>
                               </details>
                             ))}
@@ -304,24 +405,6 @@ export default function ProblemDetail() {
                       </>
                     );
                   })()}
-
-                  {sampleTestCases.length > 0 && (
-                    <div className="mt-6 space-y-3">
-                      <p className="text-xs font-black uppercase tracking-widest text-slate-500">Sample Test Cases</p>
-                      {sampleTestCases.map((tc: any, i: number) => (
-                        <div key={i} className="bg-slate-950/60 border border-white/5 rounded-xl p-4 space-y-2">
-                          <div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Input</span>
-                            <pre className="text-emerald-400 font-mono text-xs mt-1">{tc.input}</pre>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Output</span>
-                            <pre className="text-blue-400 font-mono text-xs mt-1">{tc.output}</pre>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>

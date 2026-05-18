@@ -35,7 +35,9 @@ async function syncContestsWithDatabase() {
         const existing = allDbContests.find(c => 
           c.externalId === contest.externalId || 
           c.url === contest.url ||
-          (c.title === contest.title && c.platform === contest.platform)
+          (c.title.trim().toLowerCase() === contest.title.trim().toLowerCase() && 
+           c.platform.trim().toLowerCase() === contest.platform.trim().toLowerCase() &&
+           new Date(c.startTime).getTime() === new Date(contest.startTime).getTime())
         );
 
         const contestData = {

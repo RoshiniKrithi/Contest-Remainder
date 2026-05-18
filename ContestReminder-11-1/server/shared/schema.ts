@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("user"),
   streak: integer("streak").default(0),
   lastDailySolve: timestamp("last_daily_solve"),
+  longestStreak: integer("longest_streak").default(0),
   // Platform handles for stats aggregation
   cfHandle: text("cf_handle"),
   lcHandle: text("lc_handle"),
@@ -91,6 +92,9 @@ export const problems = pgTable("problems", {
   inputFormat: text("input_format"),
   outputFormat: text("output_format"),
   examples: jsonb("examples").default([]),        // [{input, output, explanation}]
+  sampleInputs: jsonb("sample_inputs").default([]),
+  sampleOutputs: jsonb("sample_outputs").default([]),
+  explanations: jsonb("explanations").default([]),
   hints: jsonb("hints").default([]),              // [string]
   tags: jsonb("tags").default([]),                // [string]
   companies: jsonb("companies").default([]),      // [string]

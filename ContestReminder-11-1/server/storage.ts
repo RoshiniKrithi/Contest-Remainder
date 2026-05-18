@@ -59,7 +59,7 @@ export interface IStorage {
   getUserByGoogleId(googleId: string): Promise<User | undefined>;
   createUser(user: InsertUser & { googleId?: string }): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  updateUserStreak(userId: string, streak: number): Promise<User>;
+  updateUserStreak(userId: string, streak: number, longestStreak?: number): Promise<User>;
   deleteUser(id: string): Promise<void>;
 
   // Activity Report operations
@@ -70,6 +70,8 @@ export interface IStorage {
   createContest(contest: InsertContest): Promise<Contest>;
   getContest(id: string): Promise<Contest | undefined>;
   getAllContests(): Promise<Contest[]>;
+  getLiveContests(): Promise<Contest[]>;
+  getUpcomingContests(): Promise<Contest[]>;
   updateContestStatus(id: string, status: string): Promise<Contest | undefined>;
   updateContestParticipants(id: string, participants: number): Promise<Contest | undefined>;
 
@@ -436,6 +438,7 @@ export class MemStorage implements IStorage {
       id,
       role: (insertUser as any).username === "admin" ? "admin" : ((insertUser as any).role || "user"),
       streak: 0,
+      longestStreak: 0,
       googleId: (insertUser as any).googleId || null,
       lastDailySolve: null,
     };
@@ -443,10 +446,11 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async updateUserStreak(userId: string, streak: number): Promise<User> {
+  async updateUserStreak(userId: string, streak: number, longestStreak?: number): Promise<User> {
     const user = this.users.get(userId);
     if (!user) throw new Error("User not found");
-    const updated = { ...user, streak, lastDailySolve: new Date() };
+    const resolvedLongest = longestStreak !== undefined ? longestStreak : Math.max(user.longestStreak || 0, streak);
+    const updated = { ...user, streak, longestStreak: resolvedLongest, lastDailySolve: new Date() };
     this.users.set(userId, updated);
     return updated;
   }
@@ -457,11 +461,32 @@ export class MemStorage implements IStorage {
 
   // Contest operations
   async createContest(insertContest: InsertContest): Promise<Contest> {
-    const id = randomUUID();
     const startTime = new Date(insertContest.startTime);
     const endTime = new Date(insertContest.endTime);
     const computedDuration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
+    // Check for existing duplicate in memory
+    const existing = Array.from(this.contests.values()).find(
+      c => c.title.trim().toLowerCase() === insertContest.title.trim().toLowerCase() &&
+           c.platform.trim().toLowerCase() === insertContest.platform.trim().toLowerCase() &&
+           new Date(c.startTime).getTime() === startTime.getTime()
+    );
+
+    if (existing) {
+      const updated: Contest = {
+        ...existing,
+        url: insertContest.url ?? existing.url,
+        endTime,
+        duration: insertContest.duration || computedDuration,
+        status: insertContest.status || existing.status,
+        externalId: insertContest.externalId ?? existing.externalId,
+        lastUpdated: new Date()
+      };
+      this.contests.set(existing.id, updated);
+      return updated;
+    }
+
+    const id = randomUUID();
     const contest: Contest = {
       id,
       title: insertContest.title,
@@ -515,6 +540,21 @@ export class MemStorage implements IStorage {
     return Array.from(this.contests.values()).sort((a, b) =>
       new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
     );
+  }
+
+  async getLiveContests(): Promise<Contest[]> {
+    const now = new Date();
+    return Array.from(this.contests.values())
+      .filter(c => new Date(c.startTime) <= now && new Date(c.endTime) >= now)
+      .sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
+  }
+
+  async getUpcomingContests(): Promise<Contest[]> {
+    const now = new Date();
+    return Array.from(this.contests.values())
+      .filter(c => new Date(c.startTime) > now)
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+      .slice(0, 10);
   }
 
   async updateContestStatus(id: string, status: string): Promise<Contest | undefined> {
@@ -2582,10 +2622,13 @@ export class DatabaseStorage implements IStorage {
     return await this.db.select().from(users);
   }
 
-  async updateUserStreak(userId: string, streak: number): Promise<User> {
+  async updateUserStreak(userId: string, streak: number, longestStreak?: number): Promise<User> {
+    const [existing] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const resolvedLongest = longestStreak !== undefined ? longestStreak : Math.max(existing?.longestStreak || 0, streak);
+
     const [user] = await this.db
       .update(users)
-      .set({ streak, lastDailySolve: new Date() })
+      .set({ streak, longestStreak: resolvedLongest, lastDailySolve: new Date() })
       .where(eq(users.id, userId))
       .returning();
     return user;
@@ -2636,10 +2679,24 @@ export class DatabaseStorage implements IStorage {
 
     const result = await this.db.insert(contests).values({
       ...insertContest,
+      startTime,
+      endTime,
       duration: insertContest.duration || computedDuration,
       lastUpdated: new Date(),
       notified: insertContest.notified ?? false
-    }).returning();
+    })
+    .onConflictDoUpdate({
+      target: [contests.title, contests.platform, contests.startTime],
+      set: {
+        url: insertContest.url,
+        endTime,
+        duration: insertContest.duration || computedDuration,
+        status: insertContest.status,
+        externalId: insertContest.externalId,
+        lastUpdated: new Date(),
+      }
+    })
+    .returning();
     return result[0];
   }
 
@@ -2650,6 +2707,28 @@ export class DatabaseStorage implements IStorage {
 
   async getAllContests(): Promise<Contest[]> {
     return await this.db.select().from(contests).orderBy(asc(contests.startTime));
+  }
+
+  async getLiveContests(): Promise<Contest[]> {
+    return await this.db
+      .select()
+      .from(contests)
+      .where(
+        and(
+          sql`${contests.startTime} <= NOW()`,
+          sql`${contests.endTime} >= NOW()`
+        )
+      )
+      .orderBy(asc(contests.endTime));
+  }
+
+  async getUpcomingContests(): Promise<Contest[]> {
+    return await this.db
+      .select()
+      .from(contests)
+      .where(sql`${contests.startTime} > NOW()`)
+      .orderBy(asc(contests.startTime))
+      .limit(10);
   }
 
   async updateContestStatus(id: string, status: string): Promise<Contest | undefined> {

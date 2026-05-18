@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, MotionCard } from "@/components/ui/card";
 import { Trophy, Code, Bell, ExternalLink, Clock, Calendar, Zap, Activity } from "lucide-react";
@@ -24,13 +25,37 @@ export default function Dashboard() {
     queryKey: ["/api/stats"],
   });
 
-  const { data: contests, isLoading: contestsLoading } = useQuery({
-    queryKey: ["/api/contests/all"],
-    refetchInterval: 60000,
+  const { data: liveContestsData, isLoading: liveContestsLoading } = useQuery({
+    queryKey: ["/api/contests/ongoing"],
+    refetchInterval: 30000,
   });
 
-  const liveContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "ongoing") : [];
-  const upcomingContests = Array.isArray(contests) ? contests.filter((c: any) => c.status === "upcoming").slice(0, 5) : [];
+  const { data: upcomingContestsData, isLoading: upcomingContestsLoading } = useQuery({
+    queryKey: ["/api/contests/upcoming"],
+    refetchInterval: 30000,
+  });
+
+  const liveContests = useMemo(() => {
+    if (!Array.isArray(liveContestsData)) return [];
+    const seen = new Set<string>();
+    return liveContestsData.filter((c: any) => {
+      const key = `${c.title.trim().toLowerCase()}-${c.platform.trim().toLowerCase()}-${new Date(c.startTime).getTime()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [liveContestsData]);
+
+  const upcomingContests = useMemo(() => {
+    if (!Array.isArray(upcomingContestsData)) return [];
+    const seen = new Set<string>();
+    return upcomingContestsData.filter((c: any) => {
+      const key = `${c.title.trim().toLowerCase()}-${c.platform.trim().toLowerCase()}-${new Date(c.startTime).getTime()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [upcomingContestsData]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -193,7 +218,7 @@ export default function Dashboard() {
                 </span>
               </div>
               <CardContent className="p-0">
-                {contestsLoading ? (
+                {liveContestsLoading ? (
                   <div className="p-4 space-y-2">
                     {[1, 2].map((i) => (
                       <Skeleton key={i} className="h-10 w-full rounded-lg" />
@@ -202,7 +227,7 @@ export default function Dashboard() {
                 ) : liveContests.length === 0 ? (
                   <div className="py-4 px-6 flex items-center gap-3 text-slate-500 text-sm italic border-t border-white/5">
                     <Zap className="h-4 w-4 opacity-30 shrink-0" />
-                    <p>No contests are live right now. Check back soon.</p>
+                    <p>No Live Contests Right Now</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -281,7 +306,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <CardContent className="p-0">
-                {contestsLoading ? (
+                {upcomingContestsLoading ? (
                   <div className="p-6 space-y-4">
                     {[1, 2, 3].map((i) => (
                       <Skeleton key={i} className="h-16 w-full rounded-xl" />

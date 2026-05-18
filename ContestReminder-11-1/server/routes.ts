@@ -43,10 +43,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let contests = [...internalContests, ...externalContests];
 
-      // Deduplicate by externalId
+      // Deduplicate by name, platform, start_time
       const seen = new Set<string>();
       contests = contests.filter(c => {
-        const key = (c as any).externalId || c.id;
+        const key = `${c.title.trim().toLowerCase()}-${c.platform.trim().toLowerCase()}-${new Date(c.startTime).getTime()}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -67,13 +67,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contests/upcoming", async (req, res) => {
     try {
       const now = new Date();
-      const internalContests = (await storage.getAllContests()).filter(c => isAllowedPlatform(c.platform));
+      const dbContests = await storage.getUpcomingContests();
       const externalContests = await ContestService.fetchAllContests().catch(() => []);
-      const contests = [...internalContests, ...externalContests];
-      const upcoming = contests
-        .filter(c => new Date(c.startTime) > now)
-        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-      res.json(upcoming);
+      
+      const combined = [...dbContests, ...externalContests];
+      
+      // Deduplicate with robust checks based on name, platform, and start_time
+      const seen = new Set<string>();
+      const filtered = combined.filter(c => {
+        if (!isAllowedPlatform(c.platform)) return false;
+        
+        const startTimeDate = new Date(c.startTime);
+        if (isNaN(startTimeDate.getTime()) || startTimeDate <= now) return false;
+        
+        const key = `${c.title.trim().toLowerCase()}-${c.platform.trim().toLowerCase()}-${startTimeDate.getTime()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      
+      // Sort by nearest upcoming start time first
+      filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+      
+      // Display latest 10 upcoming contests as requested
+      res.json(filtered.slice(0, 10));
     } catch (error) {
       console.error("Error in upcoming contests:", error);
       res.status(500).json({ error: "Failed to fetch upcoming contests" });
@@ -83,13 +100,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/contests/ongoing", async (req, res) => {
     try {
       const now = new Date();
-      const internalContests = (await storage.getAllContests()).filter(c => isAllowedPlatform(c.platform));
+      const dbContests = await storage.getLiveContests();
       const externalContests = await ContestService.fetchAllContests().catch(() => []);
-      const contests = [...internalContests, ...externalContests];
-      const ongoing = contests.filter(c =>
-        new Date(c.startTime) <= now && new Date(c.endTime) > now
-      );
-      res.json(ongoing);
+      
+      const combined = [...dbContests, ...externalContests];
+      
+      // Deduplicate with robust checks based on name, platform, and start_time
+      const seen = new Set<string>();
+      const filtered = combined.filter(c => {
+        if (!isAllowedPlatform(c.platform)) return false;
+        
+        const startTimeDate = new Date(c.startTime);
+        const endTimeDate = new Date(c.endTime);
+        if (isNaN(startTimeDate.getTime()) || isNaN(endTimeDate.getTime())) return false;
+        if (now < startTimeDate || now > endTimeDate) return false;
+        
+        const key = `${c.title.trim().toLowerCase()}-${c.platform.trim().toLowerCase()}-${startTimeDate.getTime()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      
+      // Sort by nearest ending contest first (endTime ascending)
+      filtered.sort((a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime());
+      
+      res.json(filtered);
     } catch (error) {
       console.error("Error in ongoing contests:", error);
       res.status(500).json({ error: "Failed to fetch ongoing contests" });
@@ -266,11 +301,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No daily challenge available" });
       }
 
-      const user = await storage.getUser(req.user.id);
+      let user = await storage.getUser(req.user.id);
       const lastSolve = user?.lastDailySolve ? new Date(user.lastDailySolve) : null;
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const yesterday = today - 86400000;
       const lastSolveDate = lastSolve ? new Date(lastSolve.getFullYear(), lastSolve.getMonth(), lastSolve.getDate()).getTime() : 0;
+
+      let currentStreak = user?.streak || 0;
+      if (user && lastSolveDate < yesterday && currentStreak > 0) {
+        user = await storage.updateUserStreak(user.id, 0, user.longestStreak || 0);
+        currentStreak = 0;
+      }
 
       const solvedToday = lastSolveDate === today;
 
@@ -278,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         problemId: problem.id,
         title: problem.title,
         difficulty: problem.difficulty,
-        streak: user?.streak || 0,
+        streak: currentStreak,
         solvedToday
       });
     } catch (error) {
@@ -911,6 +953,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (allPassed) {
         await storage.updateSubmissionStatus(submission.id, "accepted", problem.points);
         await storage.trackUserActivity(req.user.id, 15, 1);
+
+        // Check for daily challenge streak update
+        const dailyChallenge = await getDailyProblem();
+        if (dailyChallenge && dailyChallenge.id === problem.id) {
+          const user = await storage.getUser(req.user.id);
+          if (user) {
+            const lastSolve = user.lastDailySolve ? new Date(user.lastDailySolve) : null;
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const lastSolveDate = lastSolve ? new Date(lastSolve.getFullYear(), lastSolve.getMonth(), lastSolve.getDate()).getTime() : 0;
+
+            if (lastSolveDate < today) {
+              const yesterday = today - 86400000;
+              let newStreak = 1;
+
+              if (lastSolveDate === yesterday) {
+                newStreak = (user.streak || 0) + 1;
+              }
+
+              await storage.updateUserStreak(user.id, newStreak);
+              console.log(`🔥 Streak updated for user ${user.username} (Daily Code): ${newStreak} days`);
+            }
+          }
+        }
       } else {
         await storage.updateSubmissionStatus(submission.id, verdict.toLowerCase().replace(/ /g, "_"), 0);
       }

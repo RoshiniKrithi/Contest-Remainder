@@ -210,7 +210,12 @@ export function setupAuth(app: Express) {
       if (!req.isAuthenticated?.() || !req.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      res.json(req.user);
+      res.json({
+        ...req.user,
+        current_streak: req.user.streak,
+        longest_streak: req.user.longestStreak,
+        last_daily_solved_at: req.user.lastDailySolve
+      });
     } catch (error: any) {
       res.status(401).json({ message: "Not authenticated" });
     }
