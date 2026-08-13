@@ -1,0 +1,62 @@
+/* UploadCsv.css - Premium glassmorphism styling for the CSV upload component */
+
+/* Container with glass effect */
+.upload-container {
+  width: 100%;
+  max-width: 28rem; /* approx 448px */
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  text-align: center;
+}
+
+.upload-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #2d3748; /* dark gray */
+}
+
+.file-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #4a5568; /* gray-700 */
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid #cbd5e0; /* gray-300 */
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.file-input:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: #a0aec0; /* gray-400 */
+}
+
+.file-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-message {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.status-uploading {
+  color: #5a67d8; /* indigo-600 */
+}
+
+.status-success {
+  color: #38a169; /* green-600 */
+}
+
+.status-error {
+  color: #e53e3e; /* red-600 */
+}
