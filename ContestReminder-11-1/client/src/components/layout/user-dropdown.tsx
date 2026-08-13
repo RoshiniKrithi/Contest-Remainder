@@ -13,10 +13,11 @@ import {
   User,
   Settings,
   LogOut,
-  ExternalLink,
   Trophy,
   Bell,
-  LineChart
+  LineChart,
+  ShieldCheck,
+  BarChart3
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -39,6 +40,9 @@ export function UserDropdown({ className }: UserDropdownProps) {
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
   };
+
+  const isAdminOrStaff = user?.role === "admin" || user?.role === "staff";
+
   return (
     <>
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
@@ -70,60 +74,72 @@ export function UserDropdown({ className }: UserDropdownProps) {
             <User className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56" data-testid="dropdown-user-menu">
+        <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-200" data-testid="dropdown-user-menu">
           <DropdownMenuLabel>
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user?.username || "Your Account"}</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                Manage your competitive programming profiles
+              <p className="text-sm font-medium leading-none text-white">{user?.username || "Your Account"}</p>
+              <p className="text-xs leading-none text-slate-400 capitalize">
+                Role: <span className="text-cyan-400 font-bold">{user?.role || "Student"}</span>
               </p>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-slate-800" />
+
+          {/* Admin Navigation Options */}
+          {isAdminOrStaff && (
+            <>
+              <Link href="/admin/students/progress">
+                <DropdownMenuItem className="cursor-pointer font-semibold text-cyan-400 focus:bg-slate-800">
+                  <BarChart3 className="mr-2 h-4 w-4 text-cyan-400" />
+                  <span>Student Progress Analytics</span>
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/admin">
+                <DropdownMenuItem className="cursor-pointer font-semibold text-blue-400 focus:bg-slate-800">
+                  <ShieldCheck className="mr-2 h-4 w-4 text-blue-400" />
+                  <span>Admin Dashboard</span>
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuSeparator className="bg-slate-800" />
+            </>
+          )}
 
           <DropdownMenuItem
-            className="cursor-pointer"
+            className="cursor-pointer focus:bg-slate-800"
             data-testid="menu-heat-map"
             onClick={() => setShowProfile(true)}
           >
-            <LineChart className="mr-2 h-4 w-4" />
+            <LineChart className="mr-2 h-4 w-4 text-slate-400" />
             <span>Heat Map</span>
           </DropdownMenuItem>
 
-          {user?.role === "admin" && (
+          {isAdminOrStaff && (
             <Link href="/profile">
-              <DropdownMenuItem className="cursor-pointer" data-testid="menu-profile">
-                <User className="mr-2 h-4 w-4" />
+              <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-profile">
+                <User className="mr-2 h-4 w-4 text-slate-400" />
                 <span>Platform Profiles</span>
               </DropdownMenuItem>
             </Link>
           )}
 
           <Link href="/reminders">
-            <DropdownMenuItem className="cursor-pointer" data-testid="menu-reminders">
-              <Bell className="mr-2 h-4 w-4" />
+            <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-reminders">
+              <Bell className="mr-2 h-4 w-4 text-slate-400" />
               <span>Contest Reminders</span>
             </DropdownMenuItem>
           </Link>
 
           <Link href="/leaderboard">
-            <DropdownMenuItem className="cursor-pointer" data-testid="menu-leaderboard">
-              <Trophy className="mr-2 h-4 w-4" />
+            <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-leaderboard">
+              <Trophy className="mr-2 h-4 w-4 text-slate-400" />
               <span>Leaderboard</span>
             </DropdownMenuItem>
           </Link>
 
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-settings">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-slate-800" />
 
           <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:text-destructive"
+            className="cursor-pointer text-rose-400 focus:text-rose-300 focus:bg-slate-800"
             data-testid="menu-logout"
             onClick={handleLogout}
           >

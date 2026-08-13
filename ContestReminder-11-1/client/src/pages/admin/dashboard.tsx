@@ -107,7 +107,7 @@ export default function AdminDashboard() {
                             <CardTitle className="text-lg text-slate-100">Weekly Questions Solved</CardTitle>
                         </CardHeader>
                         <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
                                 <BarChart data={activityData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                                     <XAxis dataKey="name" stroke="#64748b" />
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
                             <CardTitle className="text-lg text-slate-100">Learning Hours</CardTitle>
                         </CardHeader>
                         <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
                                 <LineChart data={activityData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                                     <XAxis dataKey="name" stroke="#64748b" />

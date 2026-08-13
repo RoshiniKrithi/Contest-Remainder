@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Code, Home, Globe, GraduationCap, Flame, Gamepad2, User, Users } from "lucide-react";
+import { Code, Home, Globe, GraduationCap, Flame, Gamepad2, User, Compass } from "lucide-react";
 import { UserDropdown } from "./user-dropdown";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -31,12 +31,14 @@ export default function Navbar() {
   });
 
 
+  const isAdminOrStaff = user?.role === "admin" || user?.role === "staff";
+
   const navItems = [
     { path: "/", label: "Dashboard", icon: Home },
+    { path: "/dsa/modules", label: "DSA Sheet", icon: Compass },
     { path: "/reminders", label: "Live Contests", icon: Globe },
-    { path: "/challenges", label: "Challenges", icon: Gamepad2 },
     { path: "/courses", label: "Courses", icon: GraduationCap },
-    { path: "/profile", label: "Profile", icon: User },
+    ...(isAdminOrStaff ? [{ path: "/profile", label: "Profile", icon: User }] : []),
   ];
 
   return (
