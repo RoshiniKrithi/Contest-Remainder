@@ -16,3 +16,4 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         status: 401 
     });
 }
+export const ensureAuthenticated = requireAuth;

@@ -31,7 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<SelectUser | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
-    retry: false,
+    retry: 2,
+    retryDelay: 2000,
     // Don't crash the app if the server is down — treat as logged out
     throwOnError: false,
   });
