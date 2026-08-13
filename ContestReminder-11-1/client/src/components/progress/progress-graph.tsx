@@ -109,7 +109,7 @@ export default function ProgressGraph({ className }: ProgressGraphProps) {
             <span className="text-[9px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">LIVE FEED</span>
           </div>
           <div className="h-[140px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
               <AreaChart data={progressData}>
                 <defs>
                   <linearGradient id="contestGradient" x1="0" y1="0" x2="0" y2="1">
@@ -147,7 +147,7 @@ export default function ProgressGraph({ className }: ProgressGraphProps) {
             Rating Velocity
           </h4>
           <div className="h-[140px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
               <LineChart data={progressData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                 <XAxis
