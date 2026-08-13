@@ -254,3 +254,160 @@ export async function fetchAllPlatformStats(handles: Handles): Promise<PlatformS
   const results = await Promise.allSettled(tasks);
   return results.map(r => r.status === "fulfilled" ? r.value : { platform: "Unknown", handle: "", solved: 0, rating: null, rank: null, badges: [], easy: 0, medium: 0, hard: 0, contests: 0, profileUrl: "", error: (r as any).reason?.message });
 }
+
+// ── Contest History Fetchers ──────────────────────────────────────────────────
+
+export interface ContestHistoryEntry {
+  id: string;
+  contestTitle: string;
+  contestPlatform: string;
+  contestStart: string | null;
+  rank: number | null;
+  ratingChange: number | null;
+  oldRating: number | null;
+  newRating: number | null;
+  problemsSolved: number | null;
+  attended: boolean;
+}
+
+/** Fetch Codeforces per-contest rating history for a handle */
+export async function fetchCodeforcesContestHistory(handle: string): Promise<ContestHistoryEntry[]> {
+  try {
+    const res = await axios.get(
+      `https://codeforces.com/api/user.rating?handle=${handle}`,
+      { timeout: 10000 }
+    );
+    if (res.data.status !== "OK") return [];
+    const raw: any[] = res.data.result ?? [];
+    // newest first
+    return raw.slice().reverse().map((c: any) => ({
+      id: `cf-${c.contestId}`,
+      contestTitle: c.contestName ?? `CF Round #${c.contestId}`,
+      contestPlatform: "Codeforces",
+      contestStart: c.ratingUpdateTimeSeconds
+        ? new Date(c.ratingUpdateTimeSeconds * 1000).toISOString()
+        : null,
+      rank: c.rank ?? null,
+      ratingChange: (c.newRating ?? 0) - (c.oldRating ?? 0),
+      oldRating: c.oldRating ?? null,
+      newRating: c.newRating ?? null,
+      problemsSolved: null,
+      attended: true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Fetch LeetCode per-contest history via GraphQL */
+export async function fetchLeetCodeContestHistory(handle: string): Promise<ContestHistoryEntry[]> {
+  try {
+    const query = `
+      query userContestRankingHistory($username: String!) {
+        userContestRankingHistory(username: $username) {
+          attended
+          problemsSolved
+          totalProblems
+          rating
+          ranking
+          contest { title startTime }
+        }
+      }`;
+    const res = await axios.post(
+      "https://leetcode.com/graphql",
+      { query, variables: { username: handle } },
+      { timeout: 12000, headers: { "Content-Type": "application/json", "Referer": "https://leetcode.com" } }
+    );
+    const history: any[] = res.data?.data?.userContestRankingHistory ?? [];
+    return history
+      .filter((c: any) => c.attended)
+      .slice()
+      .reverse()
+      .map((c: any, i: number) => ({
+        id: `lc-${c.contest?.title?.replace(/\s+/g, "-") ?? i}`,
+        contestTitle: c.contest?.title ?? "LeetCode Contest",
+        contestPlatform: "LeetCode",
+        contestStart: c.contest?.startTime
+          ? new Date(c.contest.startTime * 1000).toISOString()
+          : null,
+        rank: c.ranking ?? null,
+        ratingChange: null,          // LeetCode doesn't expose incremental delta easily
+        oldRating: null,
+        newRating: c.rating ? Math.round(c.rating) : null,
+        problemsSolved: c.problemsSolved ?? null,
+        attended: true,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+// ── Daily Activity Fetcher (Codeforces submissions → daily solved count) ──────
+
+export interface DailyActivityEntry {
+  date: string;   // ISO date string YYYY-MM-DD
+  solved: number;
+  minutes: number;
+}
+
+/** Derive daily problems-solved from Codeforces submission history (last 90 days) */
+export async function fetchCodeforcesActivity(handle: string): Promise<DailyActivityEntry[]> {
+  try {
+    const res = await axios.get(
+      `https://codeforces.com/api/user.status?handle=${handle}&from=1&count=10000`,
+      { timeout: 12000 }
+    );
+    if (res.data.status !== "OK") return [];
+
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 3600 * 1000;
+    const dailyMap: Record<string, Set<string>> = {};
+
+    for (const sub of res.data.result ?? []) {
+      if (sub.verdict !== "OK") continue;
+      const ts = sub.creationTimeSeconds * 1000;
+      if (ts < ninetyDaysAgo) continue;
+      const date = new Date(ts).toISOString().slice(0, 10);
+      if (!dailyMap[date]) dailyMap[date] = new Set();
+      dailyMap[date].add(`${sub.problem.contestId}-${sub.problem.index}`);
+    }
+
+    return Object.entries(dailyMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, set]) => ({ date, solved: set.size, minutes: set.size * 15 }));
+  } catch {
+    return [];
+  }
+}
+
+/** Derive daily problems-solved from LeetCode submission calendar */
+export async function fetchLeetCodeActivity(handle: string): Promise<DailyActivityEntry[]> {
+  try {
+    const query = `
+      query userCalendar($username: String!) {
+        matchedUser(username: $username) {
+          userCalendar { submissionCalendar }
+        }
+      }`;
+    const res = await axios.post(
+      "https://leetcode.com/graphql",
+      { query, variables: { username: handle } },
+      { timeout: 12000, headers: { "Content-Type": "application/json", "Referer": "https://leetcode.com" } }
+    );
+    const calendarStr = res.data?.data?.matchedUser?.userCalendar?.submissionCalendar;
+    if (!calendarStr) return [];
+
+    const calendar: Record<string, number> = JSON.parse(calendarStr);
+    const ninetyDaysAgo = Math.floor((Date.now() - 90 * 24 * 3600 * 1000) / 1000);
+
+    return Object.entries(calendar)
+      .filter(([ts]) => parseInt(ts) >= ninetyDaysAgo)
+      .sort(([a], [b]) => parseInt(a) - parseInt(b))
+      .map(([ts, count]) => ({
+        date: new Date(parseInt(ts) * 1000).toISOString().slice(0, 10),
+        solved: count,
+        minutes: count * 15,
+      }));
+  } catch {
+    return [];
+  }
+}

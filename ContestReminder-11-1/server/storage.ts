@@ -336,7 +336,7 @@ export class MemStorage implements IStorage {
         id: pId,
         contestId,
         ...p
-      });
+      } as any);
     }
   }
 
@@ -365,6 +365,7 @@ export class MemStorage implements IStorage {
       password: hashedPassword,
       role: "admin",
       streak: 0,
+      longestStreak: 0,
       googleId: null,
       lastDailySolve: null,
       cfHandle: null,
@@ -373,7 +374,8 @@ export class MemStorage implements IStorage {
       atHandle: null,
       hrHandle: null,
       gfgHandle: null,
-    };
+      departmentId: null,
+    } as any;
 
     this.users.set(id, adminUser);
     console.log("✅ Default admin user created (username: admin, password: admin123)");

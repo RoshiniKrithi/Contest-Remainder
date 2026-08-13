@@ -20,6 +20,8 @@ import { eq, and } from "drizzle-orm";
 import { setupAuth } from "./auth";
 import type { Request, Response, NextFunction } from "express";
 
+import dsaRouter from "./routes/dsa";
+
 function ensureAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && req.user?.role === "admin") {
     return next();
@@ -29,7 +31,10 @@ function ensureAdmin(req: Request, res: Response, next: NextFunction) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
-  
+
+  // Register DSA and Admin Student analytics routes
+  app.use("/api", dsaRouter);
+
   // Favicon handler
   app.get("/favicon.ico", (req, res) => res.status(204).end());
 

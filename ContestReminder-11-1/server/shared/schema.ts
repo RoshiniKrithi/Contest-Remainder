@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, jsonb, serial, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const session = pgTable("session", {
   sid: varchar("sid").primaryKey(),
@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   atHandle: text("at_handle"),
   hrHandle: text("hr_handle"),
   gfgHandle: text("gfg_handle"),
+  departmentId: varchar("department_id"),
 });
 
 export const contests = pgTable("contests", {
@@ -345,4 +346,122 @@ export type InsertBrainTeaser = z.infer<typeof insertBrainTeaserSchema>;
 
 export type TeaserAttempt = typeof teaserAttempts.$inferSelect;
 export type InsertTeaserAttempt = z.infer<typeof insertTeaserAttemptSchema>;
+
+// Staff Analytics Platform Tables
+export const departments = pgTable("departments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+});
+
+export const codingProfiles = pgTable("coding_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  platform: text("platform").notNull(),
+  handle: text("handle").notNull(),
+  currentRating: integer("current_rating").default(0),
+  maxRating: integer("max_rating").default(0),
+  totalSolved: integer("total_solved").default(0),
+  contestCount: integer("contest_count").default(0),
+  streak: integer("streak").default(0),
+  lastSynced: timestamp("last_synced").default(sql`now()`),
+});
+
+export const participations = pgTable("participations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  contestId: varchar("contest_id").notNull(),
+  rank: integer("rank"),
+  ratingChange: integer("rating_change"),
+  problemsSolved: integer("problems_solved").default(0),
+  attended: boolean("attended").default(true),
+});
+
+export const analyticsSnapshots = pgTable("analytics_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: timestamp("date").notNull().default(sql`now()`),
+  totalStudents: integer("total_students").default(0),
+  activeStudents: integer("active_students").default(0),
+  averageRating: integer("average_rating").default(0),
+  totalProblemsSolved: integer("total_problems_solved").default(0),
+});
+
+export const insertDepartmentSchema = (createInsertSchema as any)(departments).omit({ id: true });
+export const insertCodingProfileSchema = (createInsertSchema as any)(codingProfiles).omit({ id: true });
+export const insertParticipationSchema = (createInsertSchema as any)(participations).omit({ id: true });
+
+export type Department = typeof departments.$inferSelect;
+export type CodingProfile = typeof codingProfiles.$inferSelect;
+export type Participation = typeof participations.$inferSelect;
+export type AnalyticsSnapshot = typeof analyticsSnapshots.$inferSelect;
+
+// ── DSA Module Tracker Tables ───────────────────────────────────────────
+export const dsaSheets = pgTable("dsa_sheets", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const dsaTopics = pgTable("dsa_topics", {
+  id: serial("id").primaryKey(),
+  sheetId: integer("sheet_id").references(() => dsaSheets.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull().default(0),
+});
+
+export const dsaSubtopics = pgTable("dsa_subtopics", {
+  id: serial("id").primaryKey(),
+  topicId: integer("topic_id").references(() => dsaTopics.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  orderIndex: integer("order_index").notNull().default(0),
+});
+
+export const dsaProblems = pgTable("dsa_problems", {
+  id: serial("id").primaryKey(),
+  subtopicId: integer("subtopic_id").references(() => dsaSubtopics.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  platform: text("platform").notNull(),
+  problemUrl: text("problem_url").notNull(),
+  difficulty: text("difficulty").notNull(), // Easy | Medium | Hard
+  judge0ProblemId: integer("judge0_problem_id"),
+  orderIndex: integer("order_index").notNull().default(0),
+});
+
+export const userDsaProgress = pgTable("user_dsa_progress", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  problemId: integer("problem_id").notNull().references(() => dsaProblems.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("unsolved"), // unsolved | attempted | solved
+  code: text("code"),
+  language: text("language"),
+  timeSpent: integer("time_spent").default(0),
+  notes: text("notes"),
+  solvedAt: timestamp("solved_at"),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+}, (table) => {
+  return {
+    userProblemIdx: uniqueIndex("user_dsa_progress_user_problem_idx").on(table.userId, table.problemId),
+  };
+});
+
+export const insertDsaSheetSchema = (createInsertSchema as any)(dsaSheets).omit({ id: true, createdAt: true });
+export const insertDsaTopicSchema = (createInsertSchema as any)(dsaTopics).omit({ id: true });
+export const insertDsaSubtopicSchema = (createInsertSchema as any)(dsaSubtopics).omit({ id: true });
+export const insertDsaProblemSchema = (createInsertSchema as any)(dsaProblems).omit({ id: true });
+export const insertUserDsaProgressSchema = (createInsertSchema as any)(userDsaProgress).omit({ id: true, updatedAt: true });
+
+export type DsaSheet = typeof dsaSheets.$inferSelect;
+export type DsaTopic = typeof dsaTopics.$inferSelect;
+export type DsaSubtopic = typeof dsaSubtopics.$inferSelect;
+export type DsaProblem = typeof dsaProblems.$inferSelect;
+export type UserDsaProgress = typeof userDsaProgress.$inferSelect;
+
+export type InsertDsaSheet = z.infer<typeof insertDsaSheetSchema>;
+export type InsertDsaTopic = z.infer<typeof insertDsaTopicSchema>;
+export type InsertDsaSubtopic = z.infer<typeof insertDsaSubtopicSchema>;
+export type InsertDsaProblem = z.infer<typeof insertDsaProblemSchema>;
+export type InsertUserDsaProgress = z.infer<typeof insertUserDsaProgressSchema>;
+
 
