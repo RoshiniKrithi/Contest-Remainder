@@ -269,6 +269,10 @@ export function setupAuth(app: Express) {
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5005";
 
+      const callbackUrl = process.env.RENDER_EXTERNAL_URL
+        ? `${process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "")}/api/auth/google/callback`
+        : "http://localhost:5000/api/auth/google/callback";
+
       // Return a styled HTML page with instructions and demo login trigger
       res.setHeader("Content-Type", "text/html");
       res.status(200).send(`
@@ -373,7 +377,7 @@ export function setupAuth(app: Express) {
               </svg>
             </div>
             <h1>Google OAuth Configuration Required</h1>
-            <p>Google OAuth keys (<code>GOOGLE_CLIENT_ID</code> & <code>GOOGLE_CLIENT_SECRET</code>) are not set in your <code>.env</code> file.</p>
+            <p>Google OAuth keys (<code>GOOGLE_CLIENT_ID</code> & <code>GOOGLE_CLIENT_SECRET</code>) are not set in your Render Environment Variables.</p>
             
             <div class="code-block">
               GOOGLE_CLIENT_ID="your_google_client_id_here"<br>
@@ -383,8 +387,8 @@ export function setupAuth(app: Express) {
             <ol class="steps">
               <li>Open Google Cloud Console (<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#38bdf8;">console.cloud.google.com</a>).</li>
               <li>Create an OAuth 2.0 Client ID for Web Application.</li>
-              <li>Set Authorized redirect URI to: <code style="color:#e2e8f0;">http://localhost:5000/api/auth/google/callback</code></li>
-              <li>Paste the credentials into <code>.env</code>.</li>
+              <li>Set Authorized redirect URI to: <code style="color:#e2e8f0;">${callbackUrl}</code></li>
+              <li>Add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to your Render Service Environment Variables.</li>
             </ol>
 
             <div class="btn-group">
