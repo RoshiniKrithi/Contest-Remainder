@@ -1,0 +1,99 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  STUDENT
+  STAFF
+  ADMIN
+}
+
+model User {
+  id             String         @id @default(uuid())
+  username       String         @unique
+  password       String
+  role           Role           @default(STUDENT)
+  departmentId   String?
+  department     Department?    @relation(fields: [departmentId], references: [id])
+  profiles       CodingProfile[]
+  participations Participation[]
+  activities     DailyActivity[]
+  createdAt      DateTime       @default(now())
+
+  // Keep existing fields for compatibility
+  streak         Int            @default(0)
+  longestStreak  Int            @default(0)
+  googleId       String?        @unique
+  lastDailySolve DateTime?
+  cfHandle       String?
+  lcHandle       String?
+  ccHandle       String?
+  atHandle       String?
+  hrHandle       String?
+  gfgHandle      String?
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  users     User[]
+}
+
+model CodingProfile {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  platform      String
+  handle        String
+  currentRating Int      @default(0)
+  maxRating     Int      @default(0)
+  totalSolved   Int      @default(0)
+  contestCount  Int      @default(0)
+  streak        Int      @default(0)
+  lastSynced    DateTime @default(now())
+
+  @@unique([userId, platform])
+}
+
+model Contest {
+  id            String         @id @default(uuid())
+  platform      String
+  externalId    String         @unique
+  title         String
+  startTime     DateTime
+  endTime       DateTime
+  duration      Int            @default(0) // in minutes
+  status        String         @default("upcoming")
+  participations Participation[]
+}
+
+model Participation {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  contestId      String
+  contest        Contest  @relation(fields: [contestId], references: [id])
+  rank           Int?
+  ratingChange   Int?
+  problemsSolved Int      @default(0)
+  attended       Boolean  @default(true)
+  
+  @@unique([userId, contestId])
+}
+
+model DailyActivity {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  date            DateTime @db.Date
+  problemsSolved  Int      @default(0)
+  submissionCount Int      @default(0)
+  activeHours     Float    @default(0)
+
+  @@unique([userId, date])
+}
