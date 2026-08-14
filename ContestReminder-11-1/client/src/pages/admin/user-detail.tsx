@@ -123,7 +123,7 @@ export default function AdminUserDetail() {
                         </CardHeader>
                         <CardContent className="h-[300px]">
                             {chartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
                                     <AreaChart data={chartData}>
                                         <defs>
                                             <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
@@ -154,7 +154,7 @@ export default function AdminUserDetail() {
                         </CardHeader>
                         <CardContent className="h-[300px]">
                             {chartData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} initialDimension={{ width: 100, height: 100 }}>
                                     <BarChart data={chartData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                                         <XAxis dataKey="date" stroke="#64748b" />
