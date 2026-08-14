@@ -201,58 +201,8 @@ export class CodeforcesAPI {
 
 // Universal contest API aggregator (Kontests.net - Backup)
 export class KontestsAPI {
-  private static readonly BASE_URL = "https://www.kontests.net/api/v1";
-  
   static async getAllContests(): Promise<Contest[]> {
-    const maxAttempts = 3;
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const response = await axios.get(this.BASE_URL, {
-          timeout: 30000,
-          headers: {
-            'User-Agent': 'CodeArena Contest Tracker'
-          }
-        });
-        const now = new Date();
-        return response.data
-          .filter((contest: any) => new Date(contest.end_time) > now)
-          .map((contest: any) => ({
-            id: `kontest-${contest.site}-${Date.parse(contest.start_time)}`,
-            title: contest.name,
-            platform: this.normalizePlatform(contest.site),
-            startTime: contest.start_time,
-            endTime: contest.end_time,
-            duration: Math.round((new Date(contest.end_time).getTime() - new Date(contest.start_time).getTime()) / 60000),
-            url: contest.url,
-            status: new Date(contest.start_time) <= now ? "ongoing" : "upcoming"
-          }));
-      } catch (error) {
-        console.error(`Error fetching from Kontests API (attempt ${attempt}):`, error);
-        if (attempt === maxAttempts) {
-          console.error('All retries failed for Kontests API');
-          return [];
-        }
-        // exponential backoff: wait attempt * 2000 ms
-        await delay(attempt * 2000);
-      }
-    }
     return [];
-  }
-  
-  private static normalizePlatform(site: string): string {
-    const platformMap: { [key: string]: string } = {
-      'CodeForces': 'Codeforces',
-      'CodeChef': 'CodeChef',
-      'LeetCode': 'LeetCode',
-      'AtCoder': 'AtCoder',
-      'HackerRank': 'HackerRank',
-      'TopCoder': 'TopCoder',
-      'HackerEarth': 'HackerEarth',
-      'Kick Start': 'Google Kick Start',
-      'CSAcademy': 'CS Academy',
-    };
-    return platformMap[site] || site;
   }
 }
 

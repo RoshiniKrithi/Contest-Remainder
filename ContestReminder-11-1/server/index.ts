@@ -5,6 +5,7 @@ import { setupContestScheduler } from "./scheduler";
 import { setupNotificationScheduler } from "./notificationScheduler";
 import { dbReady } from "./db";
 import { setupKeepAlive } from "./keepAlive";
+import { seedDsaSheet } from "./scripts/seedDsaSheet";
 
 async function startServer() {
   // Wait for DB to resolve DNS and initialise pool
@@ -18,6 +19,7 @@ async function startServer() {
     setupContestScheduler();
     setupNotificationScheduler();
     setupKeepAlive();
+    seedDsaSheet().catch(err => console.error("DSA Sheet auto-seed error:", err));
   });
 }
 
