@@ -1,13 +1,10 @@
 # Dependencies
 node_modules/
-**/node_modules/
 .pnpm-store/
 
 # Build outputs
 dist/
-**/dist/
 build/
-**/build/
 server/dist/
 .next/
 out/
@@ -22,25 +19,35 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
-**/.env
 
 # Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 error.log
 errors.txt
-backend_*.log
-debug-*.log
+server_logs_snapshot.txt
 
-# Temp & scratch files
-scratch/
-tmp_*.txt
-*.txt
+# Dev artifacts
+docs/daily-log-template.md
 
 # IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Sessions
+sessions/
+# logs
+*.log
+tmp_*.txt
+debug-*.log
+backend_*.log
+
+# node
+node_modules/
+
+# misc
+scratch/
+*.txt   

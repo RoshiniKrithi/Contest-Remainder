@@ -384,7 +384,7 @@ export function setupAuth(app: Express) {
               <li>Open Google Cloud Console (<a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:#38bdf8;">console.cloud.google.com</a>).</li>
               <li>Create an OAuth 2.0 Client ID for Web Application.</li>
               <li>Set Authorized redirect URI to: <code style="color:#e2e8f0;">http://localhost:5000/api/auth/google/callback</code></li>
-              <li>Paste the credentials into <code>ContestReminder-11-1/.env</code>.</li>
+              <li>Paste the credentials into <code>.env</code>.</li>
             </ol>
 
             <div class="btn-group">
