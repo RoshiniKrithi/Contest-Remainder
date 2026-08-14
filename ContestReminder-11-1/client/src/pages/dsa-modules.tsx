@@ -5,12 +5,14 @@ import { DsaProgressBar } from "@/components/dsa/DsaProgressBar";
 import { DsaIdeModal } from "@/components/dsa/DsaIdeModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Compass, Trophy, RefreshCw, AlertTriangle, CheckCircle, Code2 } from "lucide-react";
+import { Compass, Trophy, RefreshCw, AlertTriangle, CheckCircle, Code2, Lock, LogIn } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function DsaModulesPage() {
-  const { data, isLoading, isError, refetch } = useDsaModules();
+  const { data, isLoading, isError, error, refetch } = useDsaModules();
   const updateMutation = useUpdateDsaProblemStatus();
   const [selectedProblemForIde, setSelectedProblemForIde] = useState<DsaProblem | null>(null);
+  const [, setLocation] = useLocation();
 
   const handleStatusChange = (problemId: number, status: "unsolved" | "attempted" | "solved") => {
     updateMutation.mutate({ problemId, status });
@@ -37,6 +39,27 @@ export default function DsaModulesPage() {
   }
 
   if (isError || !data) {
+    const isAuthError = error?.message?.includes("401") || error?.message?.toLowerCase().includes("authentication") || error?.message?.toLowerCase().includes("log in");
+
+    if (isAuthError) {
+      return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <div className="bg-slate-900/80 border border-slate-800 p-8 rounded-3xl max-w-md mx-auto space-y-4 shadow-xl">
+            <div className="p-3 bg-amber-500/10 text-amber-400 rounded-2xl w-fit mx-auto">
+              <Lock className="h-8 w-8" />
+            </div>
+            <h2 className="text-xl font-bold text-white">Authentication Required</h2>
+            <p className="text-sm text-slate-400">
+              You need to log in to access your personal DSA Sheet progress and solve interactive problems.
+            </p>
+            <Button onClick={() => setLocation("/auth")} className="gap-2 bg-cyan-600 hover:bg-cyan-500 font-bold w-full">
+              <LogIn className="h-4 w-4" /> Log In / Register
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
         <div className="bg-slate-900/80 border border-slate-800 p-8 rounded-3xl max-w-md mx-auto space-y-4 shadow-xl">
@@ -45,11 +68,16 @@ export default function DsaModulesPage() {
           </div>
           <h2 className="text-xl font-bold text-white">Unable to load DSA modules</h2>
           <p className="text-sm text-slate-400">
-            There was a problem connecting to the server. Please check your connection and try again.
+            There was a problem connecting to the server. Render backend may be starting up (15-30s on free tier).
           </p>
-          <Button onClick={() => refetch()} className="gap-2 bg-blue-600 hover:bg-blue-500">
-            <RefreshCw className="h-4 w-4" /> Try Again
-          </Button>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => refetch()} className="gap-2 bg-blue-600 hover:bg-blue-500">
+              <RefreshCw className="h-4 w-4" /> Try Again
+            </Button>
+            <Button onClick={() => setLocation("/auth")} variant="outline" className="gap-2 border-slate-700 text-slate-300">
+              <LogIn className="h-4 w-4" /> Re-login
+            </Button>
+          </div>
         </div>
       </div>
     );
