@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DsaProgressBar } from "@/components/dsa/DsaProgressBar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, User, CheckCircle2, Clock, Flame, BarChart3, Layers, AlertTriangle, RefreshCw, ChevronDown, Code2, Eye, Terminal } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
@@ -289,6 +289,7 @@ export default function AdminStudentProgressDetailPage() {
                     <Code2 className="h-4 w-4 text-cyan-400" />
                     {inspectSubmission.problemTitle}
                   </DialogTitle>
+                  <DialogDescription className="sr-only">Code submission inspection dialog</DialogDescription>
                   <span className="text-xs text-slate-400">
                     Language: <strong className="text-cyan-400 font-mono uppercase">{inspectSubmission.language}</strong> • Status: {inspectSubmission.status}
                   </span>

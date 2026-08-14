@@ -471,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const enrollment = await storage.getEnrollment(req.params.userId, req.params.courseId);
       if (!enrollment) {
-        return res.status(404).json({ error: "Enrollment not found" });
+        return res.json(null);
       }
       res.json(enrollment);
     } catch (error) {
@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const progress = await storage.getLessonProgress(req.params.userId, req.params.lessonId);
       if (!progress) {
-        return res.status(404).json({ error: "Lesson progress not found" });
+        return res.json(null);
       }
       res.json(progress);
     } catch (error) {
