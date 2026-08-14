@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { API_URL } from "@/lib/queryClient";
 
 const loginSchema = insertUserSchema.pick({ username: true, password: true });
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -247,7 +248,7 @@ export default function AuthPage() {
 
                         {/* Google Sign-In Button */}
                         <a
-                          href="/api/auth/google"
+                          href={`${API_URL}/api/auth/google`}
                           className="w-full bg-white/[0.06] border border-white/10 hover:bg-white/10 hover:border-white/20 h-14 rounded-2xl font-bold text-[13px] transition-all flex items-center justify-center gap-3 active:scale-[0.97] group text-white"
                         >
                           <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -330,7 +331,7 @@ export default function AuthPage() {
 
                         {/* Google Sign-In Button */}
                         <a
-                          href="/api/auth/google"
+                          href={`${API_URL}/api/auth/google`}
                           className="w-full bg-white/[0.06] border border-white/10 hover:bg-white/10 hover:border-white/20 h-14 rounded-2xl font-bold text-[13px] transition-all flex items-center justify-center gap-3 active:scale-[0.97] group text-white"
                         >
                           <svg className="h-5 w-5" viewBox="0 0 24 24">
