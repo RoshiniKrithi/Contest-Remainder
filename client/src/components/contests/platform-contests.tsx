@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ExternalLink, Users, ArrowLeft, Timer } from 'lucide-react';
 import { SiCodeforces, SiLeetcode, SiCodechef } from 'react-icons/si';
 import { Link, useLocation } from 'wouter';
+import { getContestUrl } from '@/lib/utils';
 
 interface Contest {
   id: string;
@@ -375,18 +376,22 @@ export default function PlatformContests() {
                         </span>
                       </div>
                     </div>
-                    <Button 
-                      className={`w-full ${info.color} text-white font-semibold py-3 hover:shadow-lg transition-all duration-200 hover:scale-105`}
-                      size="lg"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(contest.url, '_blank');
-                      }}
-                      data-testid={`button-participate-${contest.id}`}
+                    <a
+                      href={getContestUrl(contest)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full block"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <ExternalLink className="h-5 w-5 mr-2" />
-                      {isLive ? 'Join Contest Now' : 'View Contest Details'}
-                    </Button>
+                      <Button 
+                        className={`w-full ${info.color} text-white font-semibold py-3 hover:shadow-lg transition-all duration-200 hover:scale-105`}
+                        size="lg"
+                        data-testid={`button-participate-${contest.id}`}
+                      >
+                        <ExternalLink className="h-5 w-5 mr-2" />
+                        {isLive ? 'Join Contest Now' : 'View Contest Details'}
+                      </Button>
+                    </a>
                   </CardContent>
                 </Card>
               );

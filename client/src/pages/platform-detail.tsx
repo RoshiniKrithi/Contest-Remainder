@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/page-transition";
 import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { getContestUrl } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -327,14 +328,20 @@ export default function PlatformDetail() {
           </div>
 
           <div className="flex space-x-2">
-            <Button
-              className={`flex-1 ${info?.color || 'bg-gray-600'} text-white font-semibold py-3 hover:shadow-lg transition-all duration-200 hover:scale-105`}
-              onClick={() => window.open(contest.url, '_blank')}
-              data-testid={`button-join-${contest.id}`}
+            <a
+              href={getContestUrl(contest)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1"
             >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              {isLive ? 'Join Contest Now' : isUpcoming ? 'View Contest Details' : 'View Results'}
-            </Button>
+              <Button
+                className={`w-full ${info?.color || 'bg-gray-600'} text-white font-semibold py-3 hover:shadow-lg transition-all duration-200 hover:scale-105`}
+                data-testid={`button-join-${contest.id}`}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                {isLive ? 'Join Contest Now' : isUpcoming ? 'View Contest Details' : 'View Results'}
+              </Button>
+            </a>
           </div>
         </CardContent>
       </Card>

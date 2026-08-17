@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import PageTransition from "@/components/layout/page-transition";
 
 import { triggerConfetti } from "@/lib/confetti";
+import { getContestUrl } from "@/lib/utils";
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -271,17 +272,21 @@ export default function Dashboard() {
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 border-white/10 hover:bg-white hover:text-slate-950 transition-all font-bold"
-                                  onClick={() => {
-                                    triggerConfetti.basic();
-                                    window.open(contest.url, '_blank');
-                                  }}
+                                <a
+                                  href={getContestUrl(contest)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => triggerConfetti.basic()}
+                                  className="inline-block"
                                 >
-                                  JOIN <ExternalLink className="h-3 w-3 ml-1.5" />
-                                </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 border-white/10 hover:bg-white hover:text-slate-950 transition-all font-bold"
+                                  >
+                                    JOIN <ExternalLink className="h-3 w-3 ml-1.5" />
+                                  </Button>
+                                </a>
                               </TableCell>
                             </motion.tr>
                           ))}
@@ -342,16 +347,22 @@ export default function Dashboard() {
                                 {contest.startTime ? formatDateTime(contest.startTime) : "TBD"}
                               </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-8 text-slate-400 hover:text-white transition-colors font-bold"
-                                onClick={() => window.open(contest.url, '_blank')}
-                              >
-                                VIEW <ExternalLink className="h-3 w-3 ml-1.5 opacity-50" />
-                              </Button>
-                            </TableCell>
+                             <TableCell className="text-right">
+                                <a
+                                  href={getContestUrl(contest)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-block"
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 text-slate-400 hover:text-white transition-colors font-bold"
+                                  >
+                                    VIEW <ExternalLink className="h-3 w-3 ml-1.5 opacity-50" />
+                                  </Button>
+                                </a>
+                              </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>

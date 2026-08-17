@@ -4,6 +4,7 @@ import { MotionCard } from "@/components/ui/card";
 import { Users, Clock, Calendar, Hourglass, Globe, ExternalLink, ShieldCheck } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { getContestUrl } from "@/lib/utils";
 
 interface ContestCardProps {
   contest: {
@@ -129,32 +130,19 @@ export default function ContestCard({ contest }: ContestCardProps) {
         </div>
 
         <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-          {contest.url ? (
-            <a href={contest.url} target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button
-                variant="default"
-                size="sm"
-                className={`w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl transition-all shadow-lg ${isLive
-                    ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20"
-                    : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
-                  }`}
-              >
-                {isLive ? "Initiate Uplink" : "View Intelligence"}
-                <ExternalLink className="h-3.5 w-3.5 ml-2" />
-              </Button>
-            </a>
-          ) : (
-            <Link href={`/contest/${contest.id}`} className="flex-1">
-              <Button
-                variant="default"
-                size="sm"
-                className="w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20 transition-all"
-              >
-                {isLive ? "Begin Operation" : "Register Units"}
-                <ShieldCheck className="h-3.5 w-3.5 ml-2" />
-              </Button>
-            </Link>
-          )}
+          <a href={getContestUrl(contest)} target="_blank" rel="noopener noreferrer" className="flex-1">
+            <Button
+              variant="default"
+              size="sm"
+              className={`w-full text-[10px] font-black uppercase tracking-widest h-9 rounded-xl transition-all shadow-lg ${isLive
+                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20"
+                  : "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20"
+                }`}
+            >
+              {isLive ? "Initiate Uplink" : "View Intelligence"}
+              <ExternalLink className="h-3.5 w-3.5 ml-2" />
+            </Button>
+          </a>
         </div>
       </div>
 
