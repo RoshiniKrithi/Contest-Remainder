@@ -274,9 +274,10 @@ export function setupAuth(app: Express) {
 
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5005";
 
-      const callbackUrl = process.env.RENDER_EXTERNAL_URL
-        ? `${process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "")}/api/auth/google/callback`
-        : "http://localhost:5000/api/auth/google/callback";
+      const callbackUrl = process.env.GOOGLE_CALLBACK_URL ||
+        (process.env.RENDER_EXTERNAL_URL
+          ? `${process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "")}/api/auth/google/callback`
+          : "http://localhost:5000/api/auth/google/callback");
 
       // Return a styled HTML page with instructions and demo login trigger
       res.setHeader("Content-Type", "text/html");
