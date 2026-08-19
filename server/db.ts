@@ -66,14 +66,14 @@ export async function ensureDb(): Promise<ReturnType<typeof drizzle>> {
 
 export async function getDb() { return ensureDb(); }
 
-export async function getPool(): Promise<Pool> {
+export async function getPool(): Promise<pg.Pool> {
   if (_pool) return _pool;
   await initDb();
   if (!_pool) throw new Error("DB pool unavailable");
   return _pool;
 }
 
-export const pool = new Proxy({} as Pool, {
+export const pool = new Proxy({} as pg.Pool, {
   get(_t, prop) {
     if (!_pool) {
       initDb();

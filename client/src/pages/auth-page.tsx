@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, Trophy, Zap, ArrowRight, ShieldCheck, Gamepad2 } from "lucide-react";
+import { Code, Trophy, Zap, ArrowRight, ShieldCheck, Gamepad2, AlertTriangle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertUserSchema } from "@shared/schema";
@@ -196,6 +196,20 @@ export default function AuthPage() {
                         <h3 className="text-3xl font-black text-white tracking-tighter">Access Terminal</h3>
                         <p className="text-slate-600 mt-2.5 font-semibold leading-relaxed">System authentication required for dashboard uplink.</p>
                       </div>
+
+                      {loginMutation.error && (loginMutation.error.message.includes("banned") || loginMutation.error.message.includes("revoked")) && (
+                        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl text-xs space-y-1 mb-6">
+                          <p className="font-bold flex items-center gap-1.5 uppercase tracking-wide">
+                            <AlertTriangle className="h-4 w-4" />
+                            {loginMutation.error.message.includes("banned") ? "Account Access Restricted" : "Account Access Revoked"}
+                          </p>
+                          <p className="opacity-80 leading-normal">
+                            {loginMutation.error.message.includes("banned")
+                              ? "Your account has been temporarily banned by an administrator. Please contact support if you believe this is an error."
+                              : "Your account access has been permanently revoked by an administrator. You can no longer log in using this account."}
+                          </p>
+                        </div>
+                      )}
 
                       <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
                         <div className="space-y-2.5">

@@ -36,6 +36,7 @@ import AdminStudentProgressPage from "@/pages/admin/student-progress";
 import AdminStudentProgressDetailPage from "@/pages/admin/student-progress-detail";
 import IntegrityDashboard from "@/pages/admin/IntegrityDashboard";
 import IntegrityReportDetails from "@/pages/admin/IntegrityReportDetails";
+import UserAccessManagement from "@/pages/admin/UserAccessManagement";
 
 function Router() {
   const [location] = useLocation();
@@ -49,6 +50,7 @@ function Router() {
         <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
         <ProtectedAdminRoute path="/admin/users" component={AdminUserList} />
         <ProtectedAdminRoute path="/admin/users/:id" component={AdminUserDetail} />
+        <ProtectedAdminRoute path="/admin/access" component={UserAccessManagement} />
         <ProtectedAdminRoute path="/admin/students/progress" component={AdminStudentProgressPage} />
         <ProtectedAdminRoute path="/admin/students/:userId/progress" component={AdminStudentProgressDetailPage} />
         <ProtectedAdminRoute path="/admin/integrity" component={IntegrityDashboard} />

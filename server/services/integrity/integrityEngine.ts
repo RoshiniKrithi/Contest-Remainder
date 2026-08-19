@@ -92,7 +92,12 @@ export async function runIntegrityAnalysis(config: IntegrityEngineConfig): Promi
     }
 
     // 4. Run telemetry cadence metrics analysis
-    const telemetryMetrics = analyzeTelemetryCadence(events, snapshots);
+    const mappedSnapshots = snapshots.map(s => ({
+      timestamp: s.timestamp,
+      astNodeCount: s.astNodeCount ?? undefined,
+      totalCharCount: s.totalCharCount ?? undefined
+    }));
+    const telemetryMetrics = analyzeTelemetryCadence(events, mappedSnapshots);
 
     // 5. Compute overall risk scoring & flags
     const riskReport = calculateRiskScore(maxSimilarityScore, telemetryMetrics);

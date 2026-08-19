@@ -22,6 +22,7 @@ import type { Request, Response, NextFunction } from "express";
 
 import dsaRouter from "./routes/dsa";
 import integrityRouter from "./routes/integrity";
+import adminAccessRouter from "./routes/admin-access";
 
 function ensureAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && req.user?.role === "admin") {
@@ -36,6 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register DSA, Integrity, and Admin Student analytics routes
   app.use("/api", dsaRouter);
   app.use("/api", integrityRouter);
+  app.use("/api", adminAccessRouter);
 
   // Favicon handler
   app.get("/favicon.ico", (req, res) => res.status(204).end());

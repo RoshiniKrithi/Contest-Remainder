@@ -26,6 +26,14 @@ export const users = pgTable("users", {
   hrHandle: text("hr_handle"),
   gfgHandle: text("gfg_handle"),
   departmentId: varchar("department_id"),
+  // Access control fields
+  accountStatus: text("account_status").notNull().default("active"),
+  bannedAt: timestamp("banned_at"),
+  bannedBy: varchar("banned_by"),
+  banReason: text("ban_reason"),
+  revokedAt: timestamp("revoked_at"),
+  revokedBy: varchar("revoked_by"),
+  revocationReason: text("revocation_reason"),
 });
 
 export const contests = pgTable("contests", {

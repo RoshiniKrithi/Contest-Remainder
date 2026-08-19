@@ -67,6 +67,8 @@ export function setupAuth(app: Express) {
         const user = await storage.getUserByUsername(username);
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false);
+        } else if (user.accountStatus === "banned" || user.accountStatus === "revoked") {
+          return done(null, false, { message: user.accountStatus });
         } else {
           return done(null, user);
         }
@@ -163,6 +165,9 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
+      if (user && (user.accountStatus === "banned" || user.accountStatus === "revoked")) {
+        return done(null, false);
+      }
       done(null, user || false);
     } catch (error: any) {
       // DB unreachable — treat as unauthenticated, don't crash
@@ -188,8 +193,20 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) return next(err);
+      if (!user) {
+        if (info && (info.message === "banned" || info.message === "revoked")) {
+          return res.status(403).json({ error: info.message });
+        }
+        return res.status(401).send("Invalid username or password");
+      }
+      req.login(user, (loginErr) => {
+        if (loginErr) return next(loginErr);
+        res.status(200).json(user);
+      });
+    })(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {

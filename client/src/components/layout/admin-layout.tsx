@@ -8,8 +8,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     const navItems = [
         { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { path: "/admin/students/progress", label: "Student Progress", icon: Users },
         { path: "/admin/integrity", label: "Code Integrity", icon: Shield },
+        { path: "/admin/access", label: "User Access", icon: Users },
     ];
 
     return (

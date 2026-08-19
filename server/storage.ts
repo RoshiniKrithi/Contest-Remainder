@@ -61,6 +61,9 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUserStreak(userId: string, streak: number, longestStreak?: number): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  banUser(userId: string, adminId: string, reason?: string): Promise<User>;
+  restoreUser(userId: string): Promise<User>;
+  revokeUser(userId: string, adminId: string, reason?: string): Promise<User>;
 
   // Activity Report operations
   getUserActivity(userId: string): Promise<UserActivity[]>;
@@ -459,6 +462,51 @@ export class MemStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     this.users.delete(id);
+  }
+
+  async banUser(userId: string, adminId: string, reason?: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error("User not found");
+    const updated = {
+      ...user,
+      accountStatus: "banned",
+      bannedAt: new Date(),
+      bannedBy: adminId,
+      banReason: reason || null,
+    } as any;
+    this.users.set(userId, updated);
+    return updated;
+  }
+
+  async restoreUser(userId: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error("User not found");
+    const updated = {
+      ...user,
+      accountStatus: "active",
+      bannedAt: null,
+      bannedBy: null,
+      banReason: null,
+      revokedAt: null,
+      revokedBy: null,
+      revocationReason: null,
+    } as any;
+    this.users.set(userId, updated);
+    return updated;
+  }
+
+  async revokeUser(userId: string, adminId: string, reason?: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) throw new Error("User not found");
+    const updated = {
+      ...user,
+      accountStatus: "revoked",
+      revokedAt: new Date(),
+      revokedBy: adminId,
+      revocationReason: reason || null,
+    } as any;
+    this.users.set(userId, updated);
+    return updated;
   }
 
   // Contest operations
@@ -2638,6 +2686,51 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await this.db.delete(users).where(eq(users.id, id));
+  }
+
+  async banUser(userId: string, adminId: string, reason?: string): Promise<User> {
+    const [result] = await this.db.update(users)
+      .set({
+        accountStatus: "banned",
+        bannedAt: new Date(),
+        bannedBy: adminId,
+        banReason: reason || null,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!result) throw new Error("User not found");
+    return result;
+  }
+
+  async restoreUser(userId: string): Promise<User> {
+    const [result] = await this.db.update(users)
+      .set({
+        accountStatus: "active",
+        bannedAt: null,
+        bannedBy: null,
+        banReason: null,
+        revokedAt: null,
+        revokedBy: null,
+        revocationReason: null,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!result) throw new Error("User not found");
+    return result;
+  }
+
+  async revokeUser(userId: string, adminId: string, reason?: string): Promise<User> {
+    const [result] = await this.db.update(users)
+      .set({
+        accountStatus: "revoked",
+        revokedAt: new Date(),
+        revokedBy: adminId,
+        revocationReason: reason || null,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!result) throw new Error("User not found");
+    return result;
   }
 
   async getUserActivity(userId: string): Promise<UserActivity[]> {
