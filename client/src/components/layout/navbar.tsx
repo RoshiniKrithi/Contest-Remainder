@@ -38,7 +38,7 @@ export default function Navbar() {
     { path: "/dsa/modules", label: "DSA Sheet", icon: Compass },
     { path: "/reminders", label: "Live Contests", icon: Globe },
     { path: "/courses", label: "Courses", icon: GraduationCap },
-    ...(isAdminOrStaff ? [{ path: "/profile", label: "Profile", icon: User }] : []),
+    ...(!isAdminOrStaff ? [{ path: "/profile", label: "Profile", icon: User }] : []),
   ];
 
   return (
