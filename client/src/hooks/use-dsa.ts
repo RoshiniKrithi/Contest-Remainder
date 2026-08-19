@@ -244,8 +244,8 @@ export function useSubmitDsaIdeCode() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ problemId, code, language, stdin, expectedOutput, timeSpent }: { problemId: number; code: string; language: string; stdin?: string; expectedOutput?: string; timeSpent?: number }) => {
-      const res = await apiRequest("POST", `/api/dsa/problems/${problemId}/submit`, { code, language, stdin, expectedOutput, timeSpent });
+    mutationFn: async ({ problemId, code, language, stdin, expectedOutput, timeSpent, sessionId }: { problemId: number; code: string; language: string; stdin?: string; expectedOutput?: string; timeSpent?: number; sessionId?: string }) => {
+      const res = await apiRequest("POST", `/api/dsa/problems/${problemId}/submit`, { code, language, stdin, expectedOutput, timeSpent, sessionId });
       return res.json();
     },
     onSuccess: () => {

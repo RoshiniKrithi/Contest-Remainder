@@ -315,7 +315,7 @@ router.post("/dsa/problems/:id/submit", async (req: any, res) => {
     return res.status(400).json({ error: "Invalid problem ID" });
   }
 
-  const { code, language, stdin, expectedOutput, timeSpent } = req.body;
+  const { code, language, stdin, expectedOutput, timeSpent, sessionId } = req.body;
   if (!code || !language) {
     return res.status(400).json({ error: "Code and language are required" });
   }
@@ -362,6 +362,19 @@ router.post("/dsa/problems/:id/submit", async (req: any, res) => {
           updatedAt: now,
         } as any)
         .returning();
+    }
+
+    if (sessionId) {
+      import("../services/integrity/integrityEngine").then(({ runIntegrityAnalysis }) => {
+        runIntegrityAnalysis({
+          userId,
+          problemId: String(problemId),
+          code,
+          language,
+          sessionId,
+          userDsaProgressId: updatedRecord.id,
+        }).catch((err) => console.error("Error running DSA integrity analysis:", err));
+      });
     }
 
     res.json({

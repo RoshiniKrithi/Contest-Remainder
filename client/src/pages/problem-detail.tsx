@@ -20,6 +20,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/page-transition";
 import Editor from "@monaco-editor/react";
 import { getClientProblemSpec } from "@/lib/dsaProblemCatalog";
+import { CodeIntegrityProvider, useIntegritySession } from "@/components/integrity/CodeIntegrityProvider";
+import { MonacoTelemetryTracker } from "@/components/integrity/MonacoTelemetryTracker";
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = [
@@ -140,11 +142,12 @@ interface SubmitResult {
   results: { input: string; expected: string; actual: string | null; passed: boolean; status: string }[];
 }
 
-export default function ProblemDetail() {
+export function ProblemDetailInner() {
   const [, params] = useRoute("/problems/:id");
   const id = params?.id;
   const { user } = useAuth();
   const { toast } = useToast();
+  const { sessionId, flushEvents } = useIntegritySession();
 
   const [language, setLanguage] = useState("javascript");
   const [code, setCode] = useState(BOILERPLATE.javascript);
@@ -155,6 +158,9 @@ export default function ProblemDetail() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [inputInitialized, setInputInitialized] = useState(false);
   const [codeInitialized, setCodeInitialized] = useState(false);
+
+  const [editorInstance, setEditorInstance] = useState<any>(null);
+  const [monacoInstance, setMonacoInstance] = useState<any>(null);
 
   const { data: problem, isLoading } = useQuery<Problem>({
     queryKey: [`/api/problems/${id}`],
@@ -233,7 +239,8 @@ export default function ProblemDetail() {
   // Submit against all test cases
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", `/api/problems/${id}/submit`, { code, language });
+      await flushEvents();
+      const res = await apiRequest("POST", `/api/problems/${id}/submit`, { code, language, sessionId });
       return res.json();
     },
     onSuccess: (data: SubmitResult) => {
@@ -484,6 +491,10 @@ export default function ProblemDetail() {
                 language={LANGUAGES.find(l => l.id === language)?.monaco || "javascript"}
                 value={code}
                 onChange={(v) => setCode(v || "")}
+                onMount={(editor, monaco) => {
+                  setEditorInstance(editor);
+                  setMonacoInstance(monaco);
+                }}
                 theme="vs-dark"
                 options={{
                   fontSize: 13,
@@ -499,6 +510,12 @@ export default function ProblemDetail() {
                   cursorBlinking: "smooth",
                   formatOnPaste: true,
                 }}
+              />
+              <MonacoTelemetryTracker
+                editor={editorInstance}
+                monaco={monacoInstance}
+                code={code}
+                language={language}
               />
             </div>
 
@@ -638,5 +655,17 @@ export default function ProblemDetail() {
         </div>
       </div>
     </PageTransition>
+  );
+}
+
+export default function ProblemDetail() {
+  const [, params] = useRoute("/problems/:id");
+  const id = params?.id;
+
+  if (!id) return null;
+  return (
+    <CodeIntegrityProvider problemId={id}>
+      <ProblemDetailInner />
+    </CodeIntegrityProvider>
   );
 }

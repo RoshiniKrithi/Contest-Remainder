@@ -470,4 +470,82 @@ export type InsertDsaSubtopic = z.infer<typeof insertDsaSubtopicSchema>;
 export type InsertDsaProblem = z.infer<typeof insertDsaProblemSchema>;
 export type InsertUserDsaProgress = z.infer<typeof insertUserDsaProgressSchema>;
 
+export const telemetrySnapshots = pgTable("telemetry_snapshots", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id").references(() => submissions.id, { onDelete: "cascade" }),
+  userDsaProgressId: integer("user_dsa_progress_id").references(() => userDsaProgress.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  problemId: varchar("problem_id").notNull(),
+  sessionId: varchar("session_id").notNull(),
+  timestamp: timestamp("timestamp").default(sql`now()`).notNull(),
+  ikiAverageMs: integer("iki_average_ms").default(0),
+  ikiEntropy: text("iki_entropy"),
+  backspaceCount: integer("backspace_count").default(0),
+  deleteCount: integer("delete_count").default(0),
+  arrowNavigationCount: integer("arrow_navigation_count").default(0),
+  selectionCount: integer("selection_count").default(0),
+  pasteEventCount: integer("paste_event_count").default(0),
+  pastedCharCount: integer("pasted_char_count").default(0),
+  totalCharCount: integer("total_char_count").default(0),
+  astNodeCount: integer("ast_node_count").default(0),
+  cyclomaticComplexity: integer("cyclomatic_complexity").default(0),
+  astNodeDelta: integer("ast_node_delta").default(0),
+  astVelocity: integer("ast_velocity").default(0),
+  codeDelta: jsonb("code_delta").default([]),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export const integrityReports = pgTable("integrity_reports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  submissionId: varchar("submission_id").references(() => submissions.id, { onDelete: "cascade" }),
+  userDsaProgressId: integer("user_dsa_progress_id").references(() => userDsaProgress.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  problemId: varchar("problem_id").notNull(),
+  sessionId: varchar("session_id").notNull(),
+  astSimilarityScore: integer("ast_similarity_score").default(0),
+  aiAttributionScore: integer("ai_attribution_score").default(0),
+  overallRiskScore: integer("overall_risk_score").default(0),
+  matchedSubmissionId: varchar("matched_submission_id").references(() => submissions.id, { onDelete: "set null" }),
+  matchedUserDsaProgressId: integer("matched_user_dsa_progress_id").references(() => userDsaProgress.id, { onDelete: "set null" }),
+  structuralFingerprints: jsonb("structural_fingerprints").default([]),
+  signals: jsonb("signals").default([]),
+  flagReasons: jsonb("flag_reasons").default([]),
+  confidenceScore: integer("confidence_score").default(100),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+});
+
+export const integrityEvents = pgTable("integrity_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: varchar("session_id").notNull(),
+  submissionId: varchar("submission_id").references(() => submissions.id, { onDelete: "cascade" }),
+  userDsaProgressId: integer("user_dsa_progress_id").references(() => userDsaProgress.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  problemId: varchar("problem_id").notNull(),
+  eventType: varchar("event_type").notNull(),
+  timestamp: timestamp("timestamp").default(sql`now()`).notNull(),
+  cursorOffset: integer("cursor_offset").default(0),
+  payload: jsonb("payload").default({}),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
+export const integrityAuditLogs = pgTable("integrity_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminUserId: varchar("admin_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reportId: varchar("report_id").notNull(),
+  timestamp: timestamp("timestamp").default(sql`now()`).notNull(),
+  action: text("action").notNull(),
+});
+
+export const insertTelemetrySnapshotSchema = (createInsertSchema as any)(telemetrySnapshots).omit({ id: true, createdAt: true });
+export const insertIntegrityReportSchema = (createInsertSchema as any)(integrityReports).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertIntegrityEventSchema = (createInsertSchema as any)(integrityEvents).omit({ id: true, createdAt: true });
+export const insertIntegrityAuditLogSchema = (createInsertSchema as any)(integrityAuditLogs).omit({ id: true, timestamp: true });
+
+export type TelemetrySnapshot = typeof telemetrySnapshots.$inferSelect;
+export type IntegrityReport = typeof integrityReports.$inferSelect;
+export type IntegrityEvent = typeof integrityEvents.$inferSelect;
+export type IntegrityAuditLog = typeof integrityAuditLogs.$inferSelect;
+
 

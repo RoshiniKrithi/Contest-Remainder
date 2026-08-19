@@ -34,6 +34,8 @@ import { useState } from "react";
 import DsaModulesPage from "@/pages/dsa-modules";
 import AdminStudentProgressPage from "@/pages/admin/student-progress";
 import AdminStudentProgressDetailPage from "@/pages/admin/student-progress-detail";
+import IntegrityDashboard from "@/pages/admin/IntegrityDashboard";
+import IntegrityReportDetails from "@/pages/admin/IntegrityReportDetails";
 
 function Router() {
   const [location] = useLocation();
@@ -49,6 +51,8 @@ function Router() {
         <ProtectedAdminRoute path="/admin/users/:id" component={AdminUserDetail} />
         <ProtectedAdminRoute path="/admin/students/progress" component={AdminStudentProgressPage} />
         <ProtectedAdminRoute path="/admin/students/:userId/progress" component={AdminStudentProgressDetailPage} />
+        <ProtectedAdminRoute path="/admin/integrity" component={IntegrityDashboard} />
+        <ProtectedAdminRoute path="/admin/integrity/reports/:id" component={IntegrityReportDetails} />
 
         {/* User Routes */}
         <ProtectedRoute path="/" component={Dashboard} />

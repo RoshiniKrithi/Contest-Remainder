@@ -21,6 +21,7 @@ import { setupAuth } from "./auth";
 import type { Request, Response, NextFunction } from "express";
 
 import dsaRouter from "./routes/dsa";
+import integrityRouter from "./routes/integrity";
 
 function ensureAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && req.user?.role === "admin") {
@@ -32,8 +33,9 @@ function ensureAdmin(req: Request, res: Response, next: NextFunction) {
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
-  // Register DSA and Admin Student analytics routes
+  // Register DSA, Integrity, and Admin Student analytics routes
   app.use("/api", dsaRouter);
+  app.use("/api", integrityRouter);
 
   // Favicon handler
   app.get("/favicon.ico", (req, res) => res.status(204).end());
@@ -922,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/problems/:id/submit", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
     try {
-      const { code, language } = req.body;
+      const { code, language, sessionId } = req.body;
       if (!code || !language) return res.status(400).json({ error: "code and language required" });
 
       const problem = await storage.getProblem(req.params.id);
@@ -954,6 +956,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         language,
         status: verdict.toLowerCase().replace(/ /g, "_"),
       });
+
+      if (sessionId) {
+        import("./services/integrity/integrityEngine").then(({ runIntegrityAnalysis }) => {
+          runIntegrityAnalysis({
+            userId: req.user.id,
+            problemId: req.params.id,
+            code,
+            language,
+            sessionId,
+            submissionId: submission.id,
+          }).catch((err) => console.error("Error running standard integrity analysis:", err));
+        });
+      }
 
       if (allPassed) {
         await storage.updateSubmissionStatus(submission.id, "accepted", problem.points);

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { UserDropdown } from "./user-dropdown";
-import { LayoutDashboard, Users, Code, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Code, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,6 +9,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const navItems = [
         { path: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { path: "/admin/students/progress", label: "Student Progress", icon: Users },
+        { path: "/admin/integrity", label: "Code Integrity", icon: Shield },
     ];
 
     return (
@@ -52,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <main className="flex-1 flex flex-col min-w-0 bg-slate-950">
                 <header className="h-16 border-b border-slate-800 flex items-center justify-between px-8 bg-slate-900/30">
                     <h1 className="text-xl font-semibold text-slate-100">
-                        {navItems.find(i => i.path === location)?.label || "Admin Dashboard"}
+                        {navItems.find(i => location.startsWith(i.path))?.label || "Admin Dashboard"}
                     </h1>
                     <div className="flex items-center gap-4">
                         <UserDropdown />
