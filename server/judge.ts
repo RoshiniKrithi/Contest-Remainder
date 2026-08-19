@@ -147,10 +147,6 @@ function simulateExecution(code: string, language: string, stdin: string, expect
   let output = "";
   if (expectedOutput) {
     output = expectedOutput;
-  } else if (code.toLowerCase().includes("twosum") || code.toLowerCase().includes("two sum") || code.includes("target")) {
-    output = "[0, 1]\nExplanation: nums[0] + nums[1] == 9";
-  } else if (code.includes("reverse") || code.includes("Reverse")) {
-    output = "Reverse completed successfully.";
   } else {
     output = `Solution executed successfully for ${language.toUpperCase()}.\nInput: ${stdin || "Sample Test Case"}`;
   }

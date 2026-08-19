@@ -19,6 +19,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/layout/page-transition";
 import Editor from "@monaco-editor/react";
+import { getClientProblemSpec } from "@/lib/dsaProblemCatalog";
 
 // ── Language config ────────────────────────────────────────────────────────
 const LANGUAGES = [
@@ -169,11 +170,22 @@ export default function ProblemDetail() {
         explanation: problem.explanations?.[idx] || ""
       }));
     }
-    return (problem?.testCases as any[] || []).slice(0, 2).map(tc => ({
-      input: tc.input,
-      output: tc.output,
-      explanation: ""
-    }));
+    if (problem?.testCases && (problem.testCases as any[]).length > 0) {
+      return (problem.testCases as any[]).slice(0, 2).map(tc => ({
+        input: tc.input,
+        output: tc.output,
+        explanation: ""
+      }));
+    }
+    if (problem?.title) {
+      const spec = getClientProblemSpec(problem.title);
+      return [{
+        input: spec.sampleInput,
+        output: spec.sampleOutput,
+        explanation: spec.explanation
+      }];
+    }
+    return [];
   }, [problem]);
 
   // Load starter code once problem is fetched

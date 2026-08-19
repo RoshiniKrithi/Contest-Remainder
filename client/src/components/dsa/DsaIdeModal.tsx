@@ -9,6 +9,7 @@ import { DsaProblem, useRunDsaIdeCode, useSubmitDsaIdeCode, useUpdateDsaProblemS
 import { Play, CheckCircle2, Terminal, Code2, ExternalLink, Clock, FileCode, Check, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import confetti from "canvas-confetti";
+import { getClientProblemSpec } from "@/lib/dsaProblemCatalog";
 
 interface DsaIdeModalProps {
   problem: DsaProblem | null;
@@ -16,102 +17,38 @@ interface DsaIdeModalProps {
   onClose: () => void;
 }
 
-const STARTER_TEMPLATES: Record<string, string> = {
-  javascript: `/**
- * Problem: Two Sum
- * Write your algorithm implementation below.
- */
-function twoSum(nums, target) {
-  const map = new Map();
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    if (map.has(complement)) {
-      return [map.get(complement), i];
-    }
-    map.set(nums[i], i);
+function getStarterTemplate(problem: DsaProblem, lang: string): string {
+  if (problem.savedCode && problem.savedLanguage === lang) {
+    return problem.savedCode;
   }
-  return [];
+  const spec = getClientProblemSpec(problem.title);
+  if (problem.starterCode && problem.starterCode[lang]) {
+    return problem.starterCode[lang];
+  }
+  if (spec.starterCode && spec.starterCode[lang]) {
+    return spec.starterCode[lang];
+  }
+  
+  const clean = problem.title.replace(/[^a-zA-Z0-9]/g, '');
+  const fnName = clean.length > 0 ? (clean.charAt(0).toLowerCase() + clean.slice(1)) : "solve";
+
+  if (lang === "cpp") {
+    return `// Problem: ${problem.title}\n#include <iostream>\n#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    void ${fnName}() {\n        // Write solution for ${problem.title}\n    }\n};\n\nint main() {\n    Solution sol;\n    cout << "Executing ${problem.title}" << endl;\n    return 0;\n}\n`;
+  }
+  if (lang === "python") {
+    return `# Problem: ${problem.title}\nclass Solution:\n    def ${fnName}(self):\n        pass\n\nprint("Executing ${problem.title}")\n`;
+  }
+  if (lang === "java") {
+    return `// Problem: ${problem.title}\nimport java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        System.out.println("Executing ${problem.title}");\n    }\n}\n`;
+  }
+  return `/** Problem: ${problem.title} */\nfunction ${fnName}() {\n}\n\nconsole.log("Executing ${problem.title}");\n`;
 }
-
-const nums = [2, 7, 11, 15];
-const target = 9;
-console.log("Two Sum Result:", twoSum(nums, target));
-`,
-  python: `# Problem: Two Sum Solution
-def twoSum(nums, target):
-    seen = {}
-    for i, num in enumerate(nums):
-        complement = target - num
-        if complement in seen:
-            return [seen[complement], i]
-        seen[num] = i
-    return []
-
-nums = [2, 7, 11, 15]
-target = 9
-print("Two Sum Result:", twoSum(nums, target))
-`,
-  cpp: `// Problem: Two Sum Solution (C++ 17)
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-using namespace std;
-
-class Solution {
-public:
-    vector<int> twoSum(vector<int>& nums, int target) {
-        unordered_map<int, int> mp;
-        for (int i = 0; i < nums.size(); i++) {
-            int complement = target - nums[i];
-            if (mp.count(complement)) {
-                return {mp[complement], i};
-            }
-            mp[nums[i]] = i;
-        }
-        return {};
-    }
-};
-
-int main() {
-    Solution sol;
-    vector<int> nums = {2, 7, 11, 15};
-    int target = 9;
-    vector<int> res = sol.twoSum(nums, target);
-    cout << "Two Sum Result: [" << res[0] << ", " << res[1] << "]" << endl;
-    return 0;
-}
-`,
-  java: `// Problem: Two Sum Solution (Java 17)
-import java.util.*;
-
-public class Main {
-    public static int[] twoSum(int[] nums, int target) {
-        Map<Integer, Integer> map = new HashMap<>();
-        for (int i = 0; i < nums.length; i++) {
-            int complement = target - nums[i];
-            if (map.containsKey(complement)) {
-                return new int[] { map.get(complement), i };
-            }
-            map.put(nums[i], i);
-        }
-        return new int[] {};
-    }
-
-    public static void main(String[] args) {
-        int[] nums = {2, 7, 11, 15};
-        int target = 9;
-        int[] res = twoSum(nums, target);
-        System.out.println("Two Sum Result: [" + res[0] + ", " + res[1] + "]");
-    }
-}
-`,
-};
 
 export function DsaIdeModal({ problem, isOpen, onClose }: DsaIdeModalProps) {
   const { toast } = useToast();
   const [language, setLanguage] = useState<string>("cpp");
   const [code, setCode] = useState<string>("");
-  const [stdin, setStdin] = useState<string>("nums = [2,7,11,15], target = 9");
+  const [stdin, setStdin] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"editor" | "output">("editor");
   const [output, setOutput] = useState<{ stdout?: string | null; stderr?: string | null; executionTime?: string; memory?: string; status?: string } | null>(null);
 
@@ -119,19 +56,28 @@ export function DsaIdeModal({ problem, isOpen, onClose }: DsaIdeModalProps) {
   const submitCodeMutation = useSubmitDsaIdeCode();
   const updateStatusMutation = useUpdateDsaProblemStatus();
 
+  // Resolve 100% problem-relevant details for the active problem
+  const spec = problem ? getClientProblemSpec(problem.title) : null;
+  const description = problem?.description || spec?.description || `Implement an optimal solution for ${problem?.title}.`;
+  const sampleInput = problem?.sampleInput || spec?.sampleInput || "";
+  const sampleOutput = problem?.sampleOutput || spec?.sampleOutput || "";
+  const explanation = problem?.explanation || spec?.explanation || "";
+  const testCases = (problem?.testCases && problem.testCases.length > 0) ? problem.testCases : (spec?.testCases || []);
+
   useEffect(() => {
     if (problem) {
       const initialLang = problem.savedLanguage || "cpp";
       setLanguage(initialLang);
-      setCode(problem.savedCode || STARTER_TEMPLATES[initialLang] || STARTER_TEMPLATES.cpp);
+      setCode(getStarterTemplate(problem, initialLang));
+      setStdin(sampleInput);
       setOutput(null);
     }
   }, [problem]);
 
   const handleLanguageChange = (newLang: string) => {
     setLanguage(newLang);
-    if (!problem?.savedCode || problem?.savedLanguage !== newLang) {
-      setCode(STARTER_TEMPLATES[newLang] || STARTER_TEMPLATES.cpp);
+    if (problem) {
+      setCode(getStarterTemplate(problem, newLang));
     }
   };
 
@@ -159,7 +105,7 @@ export function DsaIdeModal({ problem, isOpen, onClose }: DsaIdeModalProps) {
       const isAccepted = execResult.status === "Accepted";
 
       setOutput({
-        stdout: execResult.stdout || (isAccepted ? "Code executed cleanly with output [0, 1]" : null),
+        stdout: execResult.stdout || (isAccepted ? `Code executed cleanly. Expected Output: ${sampleOutput || "Pass"}` : null),
         stderr: execResult.stderr || execResult.compile_output || null,
         executionTime: execResult.time ? `${execResult.time}s` : "0.012s",
         memory: execResult.memory ? `${execResult.memory} MB` : "14.2 MB",
@@ -197,7 +143,7 @@ export function DsaIdeModal({ problem, isOpen, onClose }: DsaIdeModalProps) {
       const execResult = res.result || res;
 
       setOutput({
-        stdout: execResult.stdout || "Solution accepted for all test cases! Result: [0, 1]",
+        stdout: execResult.stdout || `Solution accepted for all test cases! Result: ${sampleOutput || "Passed"}`,
         stderr: execResult.stderr || execResult.compile_output || null,
         executionTime: execResult.time ? `${execResult.time}s` : "0.008s",
         memory: execResult.memory ? `${execResult.memory} MB` : "12.8 MB",
@@ -324,21 +270,49 @@ export function DsaIdeModal({ problem, isOpen, onClose }: DsaIdeModalProps) {
           <div className="lg:col-span-4 border-r border-slate-800 bg-[#0A0E1A] p-5 overflow-y-auto space-y-5">
             <div>
               <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-2">Problem Statement</h4>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Implement an optimal algorithmic solution for <strong className="text-slate-100">{problem.title}</strong> using appropriate data structures and time complexity techniques.
+              <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                {description}
               </p>
             </div>
 
+            {/* Sample Input / Output Section — ALWAYS VISIBLE FOR EVERY QUESTION */}
             <div className="p-4 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
               <h5 className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                 <Terminal className="w-3.5 h-3.5 text-cyan-400" /> Sample Input / Output
               </h5>
-              <div className="text-xs font-mono bg-[#060911] p-3 rounded text-slate-300 space-y-1">
-                <div><span className="text-slate-500">Input:</span> nums = [2,7,11,15], target = 9</div>
-                <div><span className="text-slate-500">Output:</span> [0, 1]</div>
-                <div><span className="text-slate-500">Explanation:</span> Because nums[0] + nums[1] == 9, we return [0, 1].</div>
+              <div className="text-xs font-mono bg-[#060911] p-3 rounded text-slate-300 space-y-2">
+                <div>
+                  <span className="text-slate-500 font-sans block text-[11px]">Input:</span>
+                  <pre className="text-cyan-300 whitespace-pre-wrap mt-0.5">{sampleInput}</pre>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-sans block text-[11px]">Output:</span>
+                  <pre className="text-emerald-300 whitespace-pre-wrap mt-0.5">{sampleOutput}</pre>
+                </div>
+                {explanation && (
+                  <div>
+                    <span className="text-slate-500 font-sans block text-[11px]">Explanation:</span>
+                    <p className="text-slate-300 font-sans text-xs leading-normal mt-0.5">{explanation}</p>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Additional Test Cases Section */}
+            {testCases && testCases.length > 0 && (
+              <div className="space-y-2">
+                <h5 className="text-xs uppercase tracking-wider font-semibold text-slate-400">Additional Test Cases</h5>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {testCases.map((tc, idx) => (
+                    <div key={idx} className="p-2.5 rounded bg-slate-900/60 border border-slate-800 text-xs font-mono space-y-1">
+                      <div className="text-slate-400 font-sans font-semibold text-[11px]">Test Case {idx + 1}</div>
+                      <div><span className="text-slate-500">In:</span> <span className="text-cyan-300">{tc.input}</span></div>
+                      <div><span className="text-slate-500">Out:</span> <span className="text-emerald-300">{tc.output}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-400 mb-2">Quick Status Action</h4>

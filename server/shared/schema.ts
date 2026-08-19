@@ -427,6 +427,12 @@ export const dsaProblems = pgTable("dsa_problems", {
   difficulty: text("difficulty").notNull(), // Easy | Medium | Hard
   judge0ProblemId: integer("judge0_problem_id"),
   orderIndex: integer("order_index").notNull().default(0),
+  description: text("description"),
+  sampleInput: text("sample_input"),
+  sampleOutput: text("sample_output"),
+  explanation: text("explanation"),
+  testCases: jsonb("test_cases").default([]),
+  starterCode: jsonb("starter_code").default({}),
 });
 
 export const userDsaProgress = pgTable("user_dsa_progress", {

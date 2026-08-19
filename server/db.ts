@@ -1,30 +1,26 @@
 import "dotenv/config";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-import dns from "dns";
-import { drizzle } from "drizzle-orm/neon-serverless";
+import pg from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./shared/schema";
 
-// Use native DNS resolution for Neon database instead of hardcoding a single, potentially unreachable IP address
-
-
-neonConfig.webSocketConstructor = ws;
+const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set.");
 }
 
-let _pool: Pool | null = null;
+let _pool: InstanceType<typeof Pool> | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
 let _initialising = false;
 let _ready = false;
 
-async function initDb(retries = 3): Promise<void> {
-  if (_ready || _initialising) return;
+async function initDb(retries = 20): Promise<void> {
+  if (_ready) return;
   _initialising = true;
   try {
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 30000,
     });
     pool.on("error", (err) => console.error("❌ DB pool error:", err.message));
@@ -33,20 +29,23 @@ async function initDb(retries = 3): Promise<void> {
     _pool = pool;
     _db = drizzle(_pool, { schema });
     _ready = true;
-    console.log("✅ DB connected");
+    _initialising = false;
+    console.log("✅ DB connected successfully");
   } catch (err: any) {
     console.error(`❌ DB init failed: ${err.message}`);
     _pool = null;
     _db = null;
     _ready = false;
+    _initialising = false;
+    
     if (retries > 0) {
       console.log(`🔄 Retrying DB connection in 3s... (${retries} left)`);
       await new Promise(r => setTimeout(r, 3000));
-      _initialising = false;
       return initDb(retries - 1);
+    } else {
+      console.log(`⚠️ DB connection failed after retries. Starting indefinite background retries every 10s...`);
+      setTimeout(() => initDb(5), 10000);
     }
-  } finally {
-    _initialising = false;
   }
 }
 
@@ -71,14 +70,20 @@ export async function getPool(): Promise<Pool> {
 
 export const pool = new Proxy({} as Pool, {
   get(_t, prop) {
-    if (!_pool) throw new Error("DB pool not ready");
+    if (!_pool) {
+      initDb();
+      throw new Error("DB pool not ready");
+    }
     return (_pool as any)[prop];
   }
 });
 
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
   get(_t, prop) {
-    if (!_db) throw new Error("DB not ready");
+    if (!_db) {
+      initDb();
+      throw new Error("DB not ready");
+    }
     return (_db as any)[prop];
   }
 });

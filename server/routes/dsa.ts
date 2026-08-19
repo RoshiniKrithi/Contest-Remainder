@@ -3,6 +3,7 @@ import { db } from "../db";
 import { dsaSheets, dsaTopics, dsaSubtopics, dsaProblems, userDsaProgress, users } from "../shared/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { executeCode } from "../judge";
+import { getProblemDetailsSpec } from "../scripts/dsaProblemCatalog";
 
 const router = Router();
 
@@ -88,6 +89,8 @@ router.get("/dsa/modules", async (req: any, res) => {
           const status = prog?.status || "unsolved";
           if (status === "solved") subSolvedCount++;
 
+          const spec = getProblemDetailsSpec(p.title);
+
           return {
             id: p.id,
             title: p.title,
@@ -97,6 +100,12 @@ router.get("/dsa/modules", async (req: any, res) => {
             judge0ProblemId: p.judge0ProblemId,
             orderIndex: p.orderIndex,
             status,
+            description: p.description || spec.description,
+            sampleInput: p.sampleInput || spec.sampleInput,
+            sampleOutput: p.sampleOutput || spec.sampleOutput,
+            explanation: p.explanation || spec.explanation,
+            testCases: p.testCases && (p.testCases as any[]).length > 0 ? p.testCases : spec.testCases,
+            starterCode: p.starterCode && Object.keys(p.starterCode as any).length > 0 ? p.starterCode : spec.starterCode,
             savedCode: prog?.code || null,
             savedLanguage: prog?.language || null,
             timeSpent: prog?.timeSpent || 0,

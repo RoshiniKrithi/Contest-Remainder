@@ -11,6 +11,12 @@ export interface DsaProblem {
   judge0ProblemId: number | null;
   orderIndex: number;
   status: "unsolved" | "attempted" | "solved";
+  description?: string | null;
+  sampleInput?: string | null;
+  sampleOutput?: string | null;
+  explanation?: string | null;
+  testCases?: Array<{ input: string; output: string }> | null;
+  starterCode?: Record<string, string> | null;
   savedCode?: string | null;
   savedLanguage?: string | null;
   timeSpent?: number;

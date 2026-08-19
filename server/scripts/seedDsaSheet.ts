@@ -2,6 +2,7 @@ import "dotenv/config";
 import { db, dbReady } from "../db";
 import { dsaSheets, dsaTopics, dsaSubtopics, dsaProblems } from "../shared/schema";
 import { eq, and } from "drizzle-orm";
+import { getProblemDetailsSpec } from "./dsaProblemCatalog";
 
 export async function seedDsaSheet() {
   await dbReady;
@@ -610,6 +611,8 @@ export async function seedDsaSheet() {
           and(eq(dsaProblems.subtopicId, subtopic.id), eq(dsaProblems.title, probItem.title))
         ).limit(1);
 
+        const spec = getProblemDetailsSpec(probItem.title);
+
         if (!existingProb) {
           await db.insert(dsaProblems).values({
             subtopicId: subtopic.id,
@@ -618,6 +621,12 @@ export async function seedDsaSheet() {
             problemUrl: probItem.problemUrl,
             difficulty: probItem.difficulty,
             orderIndex: probItem.orderIndex,
+            description: spec.description,
+            sampleInput: spec.sampleInput,
+            sampleOutput: spec.sampleOutput,
+            explanation: spec.explanation,
+            testCases: spec.testCases,
+            starterCode: spec.starterCode,
           } as any);
           console.log(`    └─ Created Problem: ${probItem.title} [${probItem.difficulty}]`);
         } else {
@@ -627,6 +636,12 @@ export async function seedDsaSheet() {
               problemUrl: probItem.problemUrl,
               difficulty: probItem.difficulty,
               orderIndex: probItem.orderIndex,
+              description: spec.description,
+              sampleInput: spec.sampleInput,
+              sampleOutput: spec.sampleOutput,
+              explanation: spec.explanation,
+              testCases: spec.testCases,
+              starterCode: spec.starterCode,
             } as any)
             .where(eq(dsaProblems.id, existingProb.id));
         }
