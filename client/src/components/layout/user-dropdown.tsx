@@ -85,15 +85,8 @@ export function UserDropdown({ className }: UserDropdownProps) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-800" />
 
-          {/* Admin Navigation Options */}
           {isAdminOrStaff && (
             <>
-              <Link href="/admin/students/progress">
-                <DropdownMenuItem className="cursor-pointer font-semibold text-cyan-400 focus:bg-slate-800">
-                  <BarChart3 className="mr-2 h-4 w-4 text-cyan-400" />
-                  <span>Student Progress Analytics</span>
-                </DropdownMenuItem>
-              </Link>
               <Link href="/admin">
                 <DropdownMenuItem className="cursor-pointer font-semibold text-blue-400 focus:bg-slate-800">
                   <ShieldCheck className="mr-2 h-4 w-4 text-blue-400" />
