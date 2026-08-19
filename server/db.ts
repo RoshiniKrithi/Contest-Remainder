@@ -14,6 +14,11 @@ let _db: ReturnType<typeof drizzle> | null = null;
 let _initialising = false;
 let _ready = false;
 
+let resolveDbReady: () => void;
+export const dbReady = new Promise<void>((resolve) => {
+  resolveDbReady = resolve;
+});
+
 async function initDb(retries = 20): Promise<void> {
   if (_ready) return;
   _initialising = true;
@@ -31,6 +36,7 @@ async function initDb(retries = 20): Promise<void> {
     _ready = true;
     _initialising = false;
     console.log("✅ DB connected successfully");
+    resolveDbReady();
   } catch (err: any) {
     console.error(`❌ DB init failed: ${err.message}`);
     _pool = null;
@@ -50,13 +56,12 @@ async function initDb(retries = 20): Promise<void> {
 }
 
 // Start connecting immediately
-export const dbReady = initDb();
+initDb();
 
 export async function ensureDb(): Promise<ReturnType<typeof drizzle>> {
   if (_db) return _db;
-  await initDb();
-  if (!_db) throw new Error("Database unavailable — please try again in a moment");
-  return _db;
+  await dbReady;
+  return _db!;
 }
 
 export async function getDb() { return ensureDb(); }
