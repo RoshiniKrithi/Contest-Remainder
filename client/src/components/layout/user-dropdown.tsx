@@ -104,35 +104,12 @@ export function UserDropdown({ className }: UserDropdownProps) {
             </>
           )}
 
-          <DropdownMenuItem
-            className="cursor-pointer focus:bg-slate-800"
-            data-testid="menu-heat-map"
-            onClick={() => setShowProfile(true)}
-          >
-            <LineChart className="mr-2 h-4 w-4 text-slate-400" />
-            <span>Heat Map</span>
-          </DropdownMenuItem>
-
           {isAdminOrStaff && (
             <>
               <Link href="/profile">
                 <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-profile">
                   <User className="mr-2 h-4 w-4 text-slate-400" />
                   <span>Platform Profiles</span>
-                </DropdownMenuItem>
-              </Link>
-
-              <Link href="/reminders">
-                <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-reminders">
-                  <Bell className="mr-2 h-4 w-4 text-slate-400" />
-                  <span>Contest Reminders</span>
-                </DropdownMenuItem>
-              </Link>
-
-              <Link href="/leaderboard">
-                <DropdownMenuItem className="cursor-pointer focus:bg-slate-800" data-testid="menu-leaderboard">
-                  <Trophy className="mr-2 h-4 w-4 text-slate-400" />
-                  <span>Leaderboard</span>
                 </DropdownMenuItem>
               </Link>
             </>
