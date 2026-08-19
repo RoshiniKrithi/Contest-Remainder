@@ -87,7 +87,7 @@ export function UserDropdown({ className }: UserDropdownProps) {
 
           {isAdminOrStaff && (
             <>
-              <Link href="/admin">
+              <Link href="/admin/dashboard">
                 <DropdownMenuItem className="cursor-pointer font-semibold text-blue-400 focus:bg-slate-800">
                   <ShieldCheck className="mr-2 h-4 w-4 text-blue-400" />
                   <span>Admin Dashboard</span>
