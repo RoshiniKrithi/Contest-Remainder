@@ -206,8 +206,9 @@ function StatCard({ stat }: { stat: PlatformStat }) {
           {!stat.error && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
         </div>
         <a href={stat.profileUrl} target="_blank" rel="noopener noreferrer"
-          className="text-slate-500 hover:text-white transition-colors">
-          <ExternalLink className="h-3.5 w-3.5" />
+          className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/5 hover:border-white/10 rounded-lg transition-all duration-300 shadow-sm hover:shadow-[0_0_12px_rgba(255,255,255,0.05)]">
+          <span>Visit</span>
+          <ExternalLink className="h-3 w-3" />
         </a>
       </div>
 
