@@ -18,6 +18,9 @@ const ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:5005",
     "http://127.0.0.1:5005",
+    "https://localhost",
+    "http://localhost",
+    "capacitor://localhost",
     process.env.FRONTEND_URL,
 ].filter(Boolean) as string[];
 
@@ -39,7 +42,7 @@ const corsOptions: cors.CorsOptions = {
         const isVercelPreview = sanitizedOrigin.endsWith(".vercel.app") && 
                                sanitizedOrigin.includes("contest-remainder");
                                
-        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(sanitizedOrigin);
+        const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(sanitizedOrigin);
 
         if (isExplicitlyAllowed || isVercelPreview || isLocalhost) {
             callback(null, true);
