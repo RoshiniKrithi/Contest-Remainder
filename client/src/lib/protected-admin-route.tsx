@@ -7,27 +7,21 @@ export function ProtectedAdminRoute({
     component: Component,
 }: {
     path: string;
-    component: () => React.JSX.Element;
+    component: React.ComponentType<any>;
 }) {
     const { user, isLoading } = useAuth();
 
-    if (isLoading) {
-        return (
-            <Route path={path}>
+    return (
+        <Route path={path}>
+            {isLoading ? (
                 <div className="flex items-center justify-center min-h-screen bg-slate-950">
                     <Loader2 className="h-8 w-8 animate-spin text-white" />
                 </div>
-            </Route>
-        );
-    }
-
-    if (!user || (user.role !== "admin" && user.role !== "staff")) {
-        return (
-            <Route path={path}>
+            ) : user && (user.role === "admin" || user.role === "staff") ? (
+                <Component />
+            ) : (
                 <Redirect to="/" />
-            </Route>
-        );
-    }
-
-    return <Route path={path} component={Component} />;
+            )}
+        </Route>
+    );
 }
